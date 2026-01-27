@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Choisis ta Cible - Tablette</title>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            color: #ffffff;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            padding: 30px 0;
+            border-bottom: 2px solid rgba(255, 107, 53, 0.3);
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            color: #ff6b35;
+            margin-bottom: 10px;
+            text-shadow: 0 0 20px rgba(255, 107, 53, 0.5);
+        }
+
+        .subtitle {
+            color: #b0b0b0;
+            font-size: 1.1rem;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            gap: 40px;
+            align-items: start;
+        }
+
+        /* Section QR Code */
+        .qr-section {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            padding: 30px;
+            text-align: center;
+            border: 1px solid rgba(255, 107, 53, 0.2);
+            position: sticky;
+            top: 20px;
+        }
+
+        .qr-title {
+            font-size: 1.3rem;
+            margin-bottom: 20px;
+            color: #ff6b35;
+        }
+
+        .qr-container {
+            background: #ffffff;
+            padding: 20px;
+            border-radius: 15px;
+            display: inline-block;
+            margin: 20px 0;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .qr-container canvas {
+            display: block;
+        }
+
+        .session-code {
+            font-size: 2.5rem;
+            font-weight: bold;
+            letter-spacing: 8px;
+            color: #ffffff;
+            background: linear-gradient(90deg, #ff6b35, #f7931e);
+            padding: 15px 30px;
+            border-radius: 10px;
+            margin: 20px 0;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .scan-hint {
+            color: #b0b0b0;
+            font-size: 0.95rem;
+            margin-top: 15px;
+        }
+
+        .connection-status {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 20px;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+        }
+
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #28a745;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* Section Galerie */
+        .gallery-section {
+            min-height: 500px;
+        }
+
+        .gallery-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+
+        .gallery-title {
+            font-size: 1.5rem;
+            color: #ffffff;
+        }
+
+        .image-count {
+            background: rgba(255, 107, 53, 0.2);
+            color: #ff6b35;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+        }
+
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .image-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .image-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(255, 107, 53, 0.2);
+            border-color: rgba(255, 107, 53, 0.3);
+        }
+
+        .image-card img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+
+        .image-card:hover img {
+            transform: scale(1.05);
+        }
+
+        .image-info {
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .player-name {
+            font-weight: 600;
+            color: #ff6b35;
+        }
+
+        .image-time {
+            font-size: 0.8rem;
+            color: #888;
+        }
+
+        .delete-btn {
+            background: rgba(220, 53, 69, 0.2);
+            border: none;
+            color: #dc3545;
+            padding: 8px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+        }
+
+        .delete-btn:hover {
+            background: #dc3545;
+            color: white;
+        }
+
+        .empty-gallery {
+            text-align: center;
+            padding: 80px 20px;
+            color: #888;
+        }
+
+        .empty-gallery .icon {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+
+        .empty-gallery p {
+            font-size: 1.1rem;
+        }
+
+        /* Modal image plein écran */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal img {
+            max-width: 90%;
+            max-height: 90%;
+            object-fit: contain;
+            border-radius: 10px;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 20px;
+            right: 30px;
+            font-size: 3rem;
+            color: white;
+            cursor: pointer;
+        }
+
+        /* Responsive */
+        @media (max-width: 900px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+
+            .qr-section {
+                position: static;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Choisis ta Cible</h1>
+            <p class="subtitle">Scannez le QR code avec votre téléphone pour envoyer une image</p>
+        </header>
+
+        <div class="main-content">
+            <div class="qr-section">
+                <h2 class="qr-title">Scannez pour participer</h2>
+                <div class="qr-container">
+                    <canvas id="qr-code"></canvas>
+                </div>
+                <div class="session-code" id="session-code">------</div>
+                <p class="scan-hint">Scannez le QR code ou entrez ce code sur votre téléphone</p>
+                <div class="connection-status">
+                    <span class="status-dot"></span>
+                    <span id="connection-text">Connecté</span>
+                </div>
+            </div>
+
+            <div class="gallery-section">
+                <div class="gallery-header">
+                    <h2 class="gallery-title">Images reçues</h2>
+                    <span class="image-count" id="image-count">0 images</span>
+                </div>
+                <div class="gallery-grid" id="gallery-grid">
+                    <div class="empty-gallery" id="empty-gallery">
+                        <div class="icon">📷</div>
+                        <p>En attente d'images...<br>Scannez le QR code pour envoyer une photo</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal image plein écran -->
+    <div class="modal" id="image-modal">
+        <span class="modal-close">&times;</span>
+        <img id="modal-image" src="" alt="Image plein écran">
+    </div>
+
+    <script>
+        // Génère un code de session aléatoire (6 caractères alphanumériques majuscules)
+        function generateSessionId() {
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+            let result = '';
+            for (let i = 0; i < 6; i++) {
+                result += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return result;
+        }
+
+        // Initialisation
+        const sessionId = generateSessionId();
+        const socket = io();
+
+        // Éléments DOM
+        const qrCodeCanvas = document.getElementById('qr-code');
+        const sessionCodeEl = document.getElementById('session-code');
+        const connectionText = document.getElementById('connection-text');
+        const galleryGrid = document.getElementById('gallery-grid');
+        const emptyGallery = document.getElementById('empty-gallery');
+        const imageCount = document.getElementById('image-count');
+        const modal = document.getElementById('image-modal');
+        const modalImage = document.getElementById('modal-image');
+
+        // Affiche le code de session
+        sessionCodeEl.textContent = sessionId;
+
+        // Génère le QR code
+        const uploadUrl = `${window.location.origin}/upload.html?s=${sessionId}`;
+        QRCode.toCanvas(qrCodeCanvas, uploadUrl, {
+            width: 200,
+            margin: 2,
+            color: {
+                dark: '#1a1a2e',
+                light: '#ffffff'
+            }
+        });
+
+        // Connexion Socket.io
+        socket.on('connect', () => {
+            console.log('Connecté au serveur');
+            connectionText.textContent = 'Connecté';
+            socket.emit('create-session', sessionId);
+        });
+
+        socket.on('disconnect', () => {
+            console.log('Déconnecté');
+            connectionText.textContent = 'Reconnexion...';
+        });
+
+        // Réception des images existantes
+        socket.on('session-images', (images) => {
+            images.forEach(addImageToGallery);
+            updateImageCount();
+        });
+
+        // Nouvelle image reçue
+        socket.on('new-image', (imageData) => {
+            addImageToGallery(imageData);
+            updateImageCount();
+        });
+
+        // Image supprimée
+        socket.on('image-deleted', (data) => {
+            const card = document.querySelector(`[data-timestamp="${data.timestamp}"]`);
+            if (card) {
+                card.style.animation = 'fadeIn 0.3s ease reverse';
+                setTimeout(() => card.remove(), 300);
+                updateImageCount();
+            }
+        });
+
+        // Session expirée
+        socket.on('session-expired', () => {
+            alert('La session a expiré. Rechargez la page pour créer une nouvelle session.');
+            location.reload();
+        });
+
+        // Ajoute une image à la galerie
+        function addImageToGallery(imageData) {
+            // Cache le message "vide"
+            emptyGallery.style.display = 'none';
+
+            const card = document.createElement('div');
+            card.className = 'image-card';
+            card.dataset.timestamp = imageData.timestamp;
+
+            const time = new Date(imageData.timestamp).toLocaleTimeString('fr-FR', {
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+
+            card.innerHTML = `
+                <img src="${imageData.data}" alt="Image de ${imageData.playerName}" onclick="showFullscreen('${imageData.data}')">
+                <div class="image-info">
+                    <div>
+                        <span class="player-name">${imageData.playerName}</span>
+                        <span class="image-time">${time}</span>
+                    </div>
+                    <button class="delete-btn" onclick="deleteImage(${imageData.timestamp})">Supprimer</button>
+                </div>
+            `;
+
+            // Ajoute au début de la galerie
+            galleryGrid.insertBefore(card, galleryGrid.firstChild);
+        }
+
+        // Met à jour le compteur d'images
+        function updateImageCount() {
+            const count = galleryGrid.querySelectorAll('.image-card').length;
+            imageCount.textContent = `${count} image${count > 1 ? 's' : ''}`;
+
+            if (count === 0) {
+                emptyGallery.style.display = 'block';
+            }
+        }
+
+        // Affiche l'image en plein écran
+        function showFullscreen(src) {
+            modalImage.src = src;
+            modal.classList.add('active');
+        }
+
+        // Ferme le modal
+        modal.addEventListener('click', () => {
+            modal.classList.remove('active');
+        });
+
+        // Supprime une image
+        function deleteImage(timestamp) {
+            if (confirm('Supprimer cette image ?')) {
+                socket.emit('delete-image', { sessionId, timestamp });
+            }
+        }
+    </script>
+</body>
+</html>

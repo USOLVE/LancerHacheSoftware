@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#1a1a2e">
+    <title>Envoyer une image</title>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            color: #ffffff;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            max-width: 500px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        header {
+            text-align: center;
+            padding: 30px 0;
+        }
+
+        .logo {
+            font-size: 4rem;
+            margin-bottom: 10px;
+        }
+
+        h1 {
+            font-size: 1.8rem;
+            color: #ff6b35;
+            margin-bottom: 5px;
+        }
+
+        .session-info {
+            background: rgba(255, 107, 53, 0.15);
+            border: 1px solid rgba(255, 107, 53, 0.3);
+            border-radius: 10px;
+            padding: 12px 20px;
+            margin-top: 15px;
+            display: inline-block;
+        }
+
+        .session-info span {
+            font-weight: bold;
+            color: #ff6b35;
+            letter-spacing: 3px;
+        }
+
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        label {
+            font-size: 0.95rem;
+            color: #b0b0b0;
+        }
+
+        input[type="text"] {
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            padding: 15px 20px;
+            font-size: 1.1rem;
+            color: white;
+            transition: all 0.3s;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #ff6b35;
+            background: rgba(255, 107, 53, 0.1);
+        }
+
+        input[type="text"]::placeholder {
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        .upload-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .dropzone {
+            flex: 1;
+            min-height: 200px;
+            border: 3px dashed rgba(255, 107, 53, 0.5);
+            border-radius: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: rgba(255, 107, 53, 0.05);
+            padding: 30px;
+            text-align: center;
+        }
+
+        .dropzone:active {
+            background: rgba(255, 107, 53, 0.15);
+            border-color: #ff6b35;
+            transform: scale(0.98);
+        }
+
+        .dropzone .icon {
+            font-size: 4rem;
+            margin-bottom: 15px;
+        }
+
+        .dropzone p {
+            color: #b0b0b0;
+            font-size: 1rem;
+        }
+
+        .dropzone input {
+            display: none;
+        }
+
+        .preview-container {
+            display: none;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .preview-container.active {
+            display: flex;
+        }
+
+        .preview-wrapper {
+            position: relative;
+            border-radius: 15px;
+            overflow: hidden;
+            background: rgba(0, 0, 0, 0.3);
+        }
+
+        .preview-wrapper img {
+            width: 100%;
+            max-height: 300px;
+            object-fit: contain;
+            display: block;
+        }
+
+        .change-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            border: none;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+
+        .btn {
+            padding: 18px 30px;
+            font-size: 1.2rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #ff6b35, #f7931e);
+            color: white;
+            box-shadow: 0 4px 20px rgba(255, 107, 53, 0.4);
+        }
+
+        .btn-primary:active {
+            transform: scale(0.98);
+            box-shadow: 0 2px 10px rgba(255, 107, 53, 0.3);
+        }
+
+        .btn-primary:disabled {
+            background: #555;
+            box-shadow: none;
+            cursor: not-allowed;
+        }
+
+        .status-message {
+            text-align: center;
+            padding: 15px;
+            border-radius: 12px;
+            font-size: 1rem;
+            display: none;
+        }
+
+        .status-message.success {
+            display: block;
+            background: rgba(40, 167, 69, 0.2);
+            color: #28a745;
+            border: 1px solid rgba(40, 167, 69, 0.3);
+        }
+
+        .status-message.error {
+            display: block;
+            background: rgba(220, 53, 69, 0.2);
+            color: #dc3545;
+            border: 1px solid rgba(220, 53, 69, 0.3);
+        }
+
+        .status-message.loading {
+            display: block;
+            background: rgba(255, 107, 53, 0.2);
+            color: #ff6b35;
+            border: 1px solid rgba(255, 107, 53, 0.3);
+        }
+
+        footer {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-size: 0.85rem;
+        }
+
+        /* Animation de chargement */
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Écran de succès */
+        .success-screen {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            flex: 1;
+            padding: 40px 20px;
+        }
+
+        .success-screen.active {
+            display: flex;
+        }
+
+        .success-icon {
+            font-size: 6rem;
+            margin-bottom: 20px;
+            animation: bounce 0.5s ease;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+        }
+
+        .success-screen h2 {
+            color: #28a745;
+            margin-bottom: 15px;
+        }
+
+        .success-screen p {
+            color: #b0b0b0;
+            margin-bottom: 30px;
+        }
+
+        .btn-secondary {
+            background: transparent;
+            border: 2px solid #ff6b35;
+            color: #ff6b35;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">📱</div>
+            <h1>Envoyer une image</h1>
+            <div class="session-info">
+                Session: <span id="session-id">------</span>
+            </div>
+        </header>
+
+        <div class="main-content" id="main-content">
+            <div class="input-group">
+                <label for="player-name">Ton nom</label>
+                <input type="text" id="player-name" placeholder="Entre ton nom..." maxlength="20">
+            </div>
+
+            <div class="upload-area">
+                <label class="dropzone" id="dropzone">
+                    <input type="file" id="file-input" accept="image/*" capture="environment">
+                    <span class="icon">📷</span>
+                    <p>Appuie pour prendre une photo<br>ou choisir une image</p>
+                </label>
+
+                <div class="preview-container" id="preview-container">
+                    <div class="preview-wrapper">
+                        <img id="preview-image" src="" alt="Prévisualisation">
+                        <button class="change-btn" id="change-btn">Changer</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="status-message" id="status-message"></div>
+
+            <button class="btn btn-primary" id="send-btn" disabled>
+                <span id="btn-text">Envoyer l'image</span>
+            </button>
+        </div>
+
+        <div class="success-screen" id="success-screen">
+            <div class="success-icon">✅</div>
+            <h2>Image envoyée !</h2>
+            <p>Ton image apparaît maintenant sur l'écran principal</p>
+            <button class="btn btn-secondary" id="send-another-btn">Envoyer une autre image</button>
+        </div>
+
+        <footer>
+            L'image sera supprimée automatiquement après 2 heures
+        </footer>
+    </div>
+
+    <script>
+        // Récupère le sessionId depuis l'URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const sessionId = urlParams.get('s');
+
+        // Éléments DOM
+        const sessionIdEl = document.getElementById('session-id');
+        const playerNameInput = document.getElementById('player-name');
+        const fileInput = document.getElementById('file-input');
+        const dropzone = document.getElementById('dropzone');
+        const previewContainer = document.getElementById('preview-container');
+        const previewImage = document.getElementById('preview-image');
+        const changeBtn = document.getElementById('change-btn');
+        const sendBtn = document.getElementById('send-btn');
+        const btnText = document.getElementById('btn-text');
+        const statusMessage = document.getElementById('status-message');
+        const mainContent = document.getElementById('main-content');
+        const successScreen = document.getElementById('success-screen');
+        const sendAnotherBtn = document.getElementById('send-another-btn');
+
+        // Variables
+        let compressedImage = null;
+        let socket = null;
+
+        // Affiche le sessionId
+        if (sessionId) {
+            sessionIdEl.textContent = sessionId;
+        } else {
+            showStatus('Erreur: Code de session manquant', 'error');
+        }
+
+        // Connexion Socket.io
+        socket = io();
+
+        socket.on('connect', () => {
+            console.log('Connecté au serveur');
+            if (sessionId) {
+                socket.emit('join-session', sessionId);
+            }
+        });
+
+        socket.on('session-joined', (data) => {
+            console.log('Session rejointe:', data);
+        });
+
+        socket.on('upload-success', (data) => {
+            showSuccessScreen();
+        });
+
+        socket.on('upload-error', (data) => {
+            showStatus(data.message, 'error');
+            resetSendButton();
+        });
+
+        // Gestion du fichier
+        fileInput.addEventListener('change', handleFileSelect);
+        changeBtn.addEventListener('click', () => {
+            fileInput.click();
+        });
+
+        function handleFileSelect(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            if (!file.type.startsWith('image/')) {
+                showStatus('Veuillez sélectionner une image', 'error');
+                return;
+            }
+
+            showStatus('Compression de l\'image...', 'loading');
+
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                compressImage(event.target.result, (compressed) => {
+                    compressedImage = compressed;
+                    previewImage.src = compressed;
+                    dropzone.style.display = 'none';
+                    previewContainer.classList.add('active');
+                    sendBtn.disabled = false;
+                    hideStatus();
+                });
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // Compression de l'image
+        function compressImage(dataUrl, callback) {
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                let width = img.width;
+                let height = img.height;
+                const maxSize = 800;
+
+                // Redimensionne si nécessaire
+                if (width > maxSize || height > maxSize) {
+                    if (width > height) {
+                        height = Math.round((height * maxSize) / width);
+                        width = maxSize;
+                    } else {
+                        width = Math.round((width * maxSize) / height);
+                        height = maxSize;
+                    }
+                }
+
+                canvas.width = width;
+                canvas.height = height;
+
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+
+                // Compression JPEG à 70%
+                callback(canvas.toDataURL('image/jpeg', 0.7));
+            };
+            img.src = dataUrl;
+        }
+
+        // Envoi de l'image
+        sendBtn.addEventListener('click', () => {
+            if (!compressedImage) {
+                showStatus('Veuillez sélectionner une image', 'error');
+                return;
+            }
+
+            const playerName = playerNameInput.value.trim() || 'Anonyme';
+
+            // Désactive le bouton et affiche le chargement
+            sendBtn.disabled = true;
+            btnText.innerHTML = '<span class="spinner"></span> Envoi en cours...';
+
+            socket.emit('send-image', {
+                sessionId: sessionId,
+                image: compressedImage,
+                playerName: playerName
+            });
+        });
+
+        // Envoyer une autre image
+        sendAnotherBtn.addEventListener('click', () => {
+            resetForm();
+        });
+
+        // Fonctions utilitaires
+        function showStatus(message, type) {
+            statusMessage.textContent = message;
+            statusMessage.className = 'status-message ' + type;
+        }
+
+        function hideStatus() {
+            statusMessage.className = 'status-message';
+        }
+
+        function resetSendButton() {
+            sendBtn.disabled = false;
+            btnText.textContent = 'Envoyer l\'image';
+        }
+
+        function showSuccessScreen() {
+            mainContent.style.display = 'none';
+            successScreen.classList.add('active');
+        }
+
+        function resetForm() {
+            compressedImage = null;
+            fileInput.value = '';
+            previewImage.src = '';
+            previewContainer.classList.remove('active');
+            dropzone.style.display = 'flex';
+            sendBtn.disabled = true;
+            resetSendButton();
+            hideStatus();
+            mainContent.style.display = 'flex';
+            successScreen.classList.remove('active');
+        }
+    </script>
+</body>
+</html>
