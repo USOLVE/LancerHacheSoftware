@@ -6,8 +6,8 @@
 const IMAGE_SERVER_CONFIG = {
     // URL du serveur (à configurer selon le déploiement)
     // En local: 'http://localhost:3000'
-    // En production: 'https://votre-serveur.onrender.com'
-    serverUrl: localStorage.getItem('imageServerUrl') || 'http://localhost:3000',
+    // En production: 'https://imageserverlancerdehache.onrender.com'
+    serverUrl: localStorage.getItem('imageServerUrl') || 'https://imageserverlancerdehache.onrender.com',
     sessionExpiry: 2 * 60 * 60 * 1000 // 2 heures
 };
 
