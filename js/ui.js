@@ -540,13 +540,17 @@ function startGame() {
         // Dessine la cible par défaut
         drawCustomTarget(elements.targetSvg, onCustomTargetClick);
 
+        // Affiche le QR code immédiatement (pendant la connexion)
+        showQrUploadModal();
+
         // Initialise la connexion au serveur
         initImageServer(onImagesUpdate)
             .then((result) => {
                 console.log('Connecté avec session:', result.sessionId);
                 drawCustomTarget(elements.targetSvg, onCustomTargetClick);
                 updateCustomTargetUI();
-                showQrUploadModal();
+                // Met à jour le modal avec le QR code maintenant qu'on a la session
+                updateQrModalContent();
             })
             .catch((error) => {
                 console.error('Erreur connexion:', error);
@@ -561,8 +565,8 @@ function startGame() {
                         <button class="btn btn-secondary" style="margin-top: 15px;" onclick="location.reload()">Réessayer</button>
                     </div>
                 `;
-                // Affiche quand même le modal pour voir l'état
-                showQrUploadModal();
+                // Met à jour le modal pour afficher l'erreur
+                updateQrModalContent();
             });
     } else if (mode === 'luckyLuke') {
         // Mode Lucky Luke
@@ -1742,6 +1746,10 @@ function onImagesUpdate(images) {
     console.log('Images mises à jour:', images.length);
     updateCustomTargetUI();
     drawCustomTarget(elements.targetSvg, onCustomTargetClick);
+    // Met à jour aussi le modal si ouvert
+    if (elements.qrUploadModal && elements.qrUploadModal.style.display === 'flex') {
+        updateQrModalContent();
+    }
 }
 
 /**
@@ -1878,12 +1886,74 @@ function hideQrUploadModal() {
 }
 
 /**
+ * Met à jour le contenu du modal QR (sans changer sa visibilité)
+ */
+function updateQrModalContent() {
+    if (!elements.qrUploadModal) return;
+
+    const sessionId = getSessionId();
+    const uploadUrl = getUploadUrl();
+
+    // Vérifie si connecté au serveur
+    if (sessionId && uploadUrl) {
+        // Génère le QR code via API externe
+        const qrHtml = generateQRCodeHTML(uploadUrl, 200);
+        elements.qrCodeContainer.innerHTML = qrHtml;
+
+        // Affiche le code de session
+        const existingSessionDisplay = elements.qrCodeContainer.parentElement.querySelector('.session-display');
+        if (existingSessionDisplay) {
+            existingSessionDisplay.textContent = sessionId;
+        } else {
+            const sessionDisplay = document.createElement('div');
+            sessionDisplay.className = 'session-display';
+            sessionDisplay.style.cssText = 'font-size: 1.5rem; font-weight: bold; letter-spacing: 5px; color: #ff6b35; margin-top: 15px;';
+            sessionDisplay.textContent = sessionId;
+            elements.qrCodeContainer.parentElement.insertBefore(sessionDisplay, elements.qrCodeContainer.nextSibling);
+        }
+
+        // Affiche l'URL pour debug
+        const existingUrlDisplay = elements.qrCodeContainer.parentElement.querySelector('.url-display');
+        if (existingUrlDisplay) {
+            existingUrlDisplay.textContent = uploadUrl;
+        } else {
+            const urlDisplay = document.createElement('div');
+            urlDisplay.className = 'url-display';
+            urlDisplay.style.cssText = 'font-size: 0.75rem; color: #888; margin-top: 10px; word-break: break-all; max-width: 250px;';
+            urlDisplay.textContent = uploadUrl;
+            elements.qrCodeContainer.parentElement.appendChild(urlDisplay);
+        }
+    }
+
+    // Met à jour la prévisualisation
+    const selectedImage = getSelectedImage();
+    if (selectedImage) {
+        elements.imagePreview.style.display = 'block';
+        elements.previewImg.src = selectedImage.data;
+        elements.btnClearImage.style.display = 'block';
+        elements.imageTimer.textContent = `De: ${selectedImage.playerName}`;
+    } else {
+        elements.imagePreview.style.display = 'none';
+        elements.btnClearImage.style.display = 'none';
+    }
+}
+
+/**
  * Supprime l'image sélectionnée
  */
 function handleClearCustomImage() {
     const selectedImage = getSelectedImage();
-    if (selectedImage && confirm('Supprimer cette image ?')) {
-        deleteImage(selectedImage.timestamp);
+    if (selectedImage) {
+        if (confirm('Supprimer cette image ?')) {
+            deleteImage(selectedImage.timestamp);
+            // La mise à jour sera faite via le callback onImagesUpdate quand le serveur confirme
+            // Mais on met aussi à jour localement pour une réponse immédiate
+            setTimeout(() => {
+                drawCustomTarget(elements.targetSvg, onCustomTargetClick);
+                updateCustomTargetUI();
+                updateQrModalContent();
+            }, 100);
+        }
     }
 }
 
