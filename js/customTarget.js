@@ -201,6 +201,26 @@ export function prevImage() {
 }
 
 /**
+ * Ajoute une image locale (uploadée directement depuis l'appareil)
+ */
+export function addLocalImage(imageData, playerName = 'Local') {
+    const localImage = {
+        data: imageData,
+        playerName,
+        timestamp: Date.now()
+    };
+
+    receivedImages.unshift(localImage);
+    selectedImageIndex = 0;
+
+    if (onImageUpdateCallback) {
+        onImageUpdateCallback(receivedImages);
+    }
+
+    return localImage;
+}
+
+/**
  * Supprime une image
  */
 export function deleteImage(timestamp) {

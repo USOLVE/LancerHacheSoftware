@@ -17,7 +17,7 @@ import {
 } from './darts.js';
 import {
     initImageServer, disconnectImageServer, getSessionId, getUploadUrl, getReceivedImages,
-    getSelectedImage, selectImage, nextImage, prevImage, deleteImage, isConnected,
+    getSelectedImage, selectImage, nextImage, prevImage, deleteImage, addLocalImage, isConnected,
     drawCustomTarget, generateQRCodeHTML, setImageServerUrl, getImageServerUrl
 } from './customTarget.js';
 import {
@@ -1955,6 +1955,36 @@ function handleClearCustomImage() {
             }, 100);
         }
     }
+}
+
+/**
+ * Gère l'upload d'image depuis le sélecteur de fichier local
+ */
+function handleImageUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    // Vérifie que c'est une image
+    if (!file.type.startsWith('image/')) {
+        alert('Veuillez sélectionner une image');
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        const imageData = e.target.result;
+
+        // Ajoute l'image localement
+        addLocalImage(imageData, 'Local');
+
+        // Ferme le modal et met à jour la cible
+        hideQrUploadModal();
+    };
+
+    reader.readAsDataURL(file);
+
+    // Reset l'input pour permettre de re-sélectionner le même fichier
+    event.target.value = '';
 }
 
 /**
