@@ -269,19 +269,28 @@ function notifyUpdate() {
 export function drawMorpionGrid(svgElement, onCellClick) {
     if (!svgElement) return;
 
-    const size = 500;
-    const cellSize = size / 3;
-    const padding = 20;
+    const svgSize = 500;
+    const gridSize = 440; // Même diamètre que les cibles (2 × 220)
+    const offset = (svgSize - gridSize) / 2; // Centrage = 30
+    const cellSize = gridSize / 3;
+    const padding = 15;
 
     svgElement.innerHTML = '';
 
-    // Fond
+    // Fond du SVG
     const background = createSvgElement('rect', {
-        x: 0, y: 0, width: size, height: size,
-        fill: '#5D4037',
-        rx: 20, ry: 20
+        x: 0, y: 0, width: svgSize, height: svgSize,
+        fill: '#2d2d2d'
     });
     svgElement.appendChild(background);
+
+    // Fond de la grille (style bois)
+    const gridBackground = createSvgElement('rect', {
+        x: offset, y: offset, width: gridSize, height: gridSize,
+        fill: '#5D4037',
+        rx: 15, ry: 15
+    });
+    svgElement.appendChild(gridBackground);
 
     // Lignes de la grille
     const lineAttrs = {
@@ -292,21 +301,25 @@ export function drawMorpionGrid(svgElement, onCellClick) {
 
     // Lignes verticales
     svgElement.appendChild(createSvgElement('line', {
-        x1: cellSize, y1: padding, x2: cellSize, y2: size - padding,
+        x1: offset + cellSize, y1: offset + padding,
+        x2: offset + cellSize, y2: offset + gridSize - padding,
         ...lineAttrs
     }));
     svgElement.appendChild(createSvgElement('line', {
-        x1: cellSize * 2, y1: padding, x2: cellSize * 2, y2: size - padding,
+        x1: offset + cellSize * 2, y1: offset + padding,
+        x2: offset + cellSize * 2, y2: offset + gridSize - padding,
         ...lineAttrs
     }));
 
     // Lignes horizontales
     svgElement.appendChild(createSvgElement('line', {
-        x1: padding, y1: cellSize, x2: size - padding, y2: cellSize,
+        x1: offset + padding, y1: offset + cellSize,
+        x2: offset + gridSize - padding, y2: offset + cellSize,
         ...lineAttrs
     }));
     svgElement.appendChild(createSvgElement('line', {
-        x1: padding, y1: cellSize * 2, x2: size - padding, y2: cellSize * 2,
+        x1: offset + padding, y1: offset + cellSize * 2,
+        x2: offset + gridSize - padding, y2: offset + cellSize * 2,
         ...lineAttrs
     }));
 
@@ -314,8 +327,8 @@ export function drawMorpionGrid(svgElement, onCellClick) {
     for (let i = 0; i < 9; i++) {
         const row = Math.floor(i / 3);
         const col = i % 3;
-        const x = col * cellSize;
-        const y = row * cellSize;
+        const x = offset + col * cellSize;
+        const y = offset + row * cellSize;
 
         const cell = createSvgElement('rect', {
             x, y, width: cellSize, height: cellSize,
@@ -336,8 +349,10 @@ export function drawMorpionGrid(svgElement, onCellClick) {
 export function updateMorpionDisplay(svgElement) {
     if (!svgElement || !morpionState) return;
 
-    const size = 500;
-    const cellSize = size / 3;
+    const svgSize = 500;
+    const gridSize = 440; // Même diamètre que les cibles
+    const offset = (svgSize - gridSize) / 2; // Centrage = 30
+    const cellSize = gridSize / 3;
 
     // Supprime les anciens symboles
     svgElement.querySelectorAll('.morpion-symbol, .winning-line').forEach(el => el.remove());
@@ -347,8 +362,8 @@ export function updateMorpionDisplay(svgElement) {
         if (symbol) {
             const row = Math.floor(i / 3);
             const col = i % 3;
-            const centerX = col * cellSize + cellSize / 2;
-            const centerY = row * cellSize + cellSize / 2;
+            const centerX = offset + col * cellSize + cellSize / 2;
+            const centerY = offset + row * cellSize + cellSize / 2;
             const symbolSize = cellSize * 0.35;
 
             if (symbol === 'X') {
@@ -393,10 +408,10 @@ export function updateMorpionDisplay(svgElement) {
         const rowC = Math.floor(c / 3);
         const colC = c % 3;
 
-        const x1 = colA * cellSize + cellSize / 2;
-        const y1 = rowA * cellSize + cellSize / 2;
-        const x2 = colC * cellSize + cellSize / 2;
-        const y2 = rowC * cellSize + cellSize / 2;
+        const x1 = offset + colA * cellSize + cellSize / 2;
+        const y1 = offset + rowA * cellSize + cellSize / 2;
+        const x2 = offset + colC * cellSize + cellSize / 2;
+        const y2 = offset + rowC * cellSize + cellSize / 2;
 
         const winLine = createSvgElement('line', {
             x1, y1, x2, y2,
