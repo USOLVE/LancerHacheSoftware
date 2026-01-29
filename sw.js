@@ -1,5 +1,5 @@
 // Service Worker pour Lancer de Hache PWA
-const CACHE_NAME = 'lancer-hache-v4';
+const CACHE_NAME = 'lancer-hache-v5';
 const urlsToCache = [
     '/',
     '/index.html',
@@ -14,6 +14,7 @@ const urlsToCache = [
     '/js/morpion.js',
     '/js/darts.js',
     '/js/customTarget.js',
+    '/js/newModes.js',
     '/manifest.json',
     '/assets/icons/icon-192.png',
     '/assets/icons/icon-512.png'
