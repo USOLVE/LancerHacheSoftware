@@ -1,5 +1,5 @@
 // Service Worker pour Lancer de Hache PWA
-const CACHE_NAME = 'lancer-hache-v6';
+const CACHE_NAME = 'lancer-hache-v7';
 const urlsToCache = [
     '/',
     '/index.html',

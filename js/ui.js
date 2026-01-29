@@ -2,7 +2,7 @@
 // UI - Interface Utilisateur
 // ========================================
 
-import { initTarget, setKillshotEnabled, addImpactMarker, clearImpactMarkers } from './target.js';
+import { initTarget, setKillshotEnabled, addImpactMarker, clearImpactMarkers, cleanupTarget } from './target.js';
 import {
     initGame, loadGame, getGameState, getCurrentPlayer, isKillshotAllowed,
     registerThrow, registerMiss, undoLast, getGameResult, rematch, quitGame, getTeamInfo
@@ -469,6 +469,7 @@ function startGame() {
 
     if (mode === 'morpion') {
         // Mode Morpion (avec ou sans équipes)
+        cleanupTarget(); // Nettoie les handlers de la cible classique
         const teamMode = elements.teamModeToggle?.checked && playerNames.length === 4;
         initMorpion(playerNames, onMorpionUpdate, { teamMode });
         drawMorpionGrid(elements.targetSvg, onMorpionCellClick);
@@ -480,6 +481,7 @@ function startGame() {
         elements.btnKillshot.style.display = 'none';
     } else if (mode === 'darts301') {
         // Mode Fléchettes 301 (avec ou sans équipes)
+        cleanupTarget(); // Nettoie les handlers de la cible classique
         const teamMode = elements.teamModeToggle?.checked && playerNames.length >= 2;
         const teams = {};
 
@@ -500,6 +502,7 @@ function startGame() {
         elements.btnKillshot.style.display = 'none';
     } else if (mode === 'customTarget') {
         // Mode Custom Target : connexion au serveur d'images
+        cleanupTarget(); // Nettoie les handlers de la cible classique
 
         // Bouton QR Code (utilise btnUndo)
         elements.btnUndo.style.display = '';

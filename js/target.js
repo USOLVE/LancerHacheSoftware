@@ -29,10 +29,30 @@ let targetSvg = null;
 let onZoneClickCallback = null;
 let killshotEnabled = false;
 
+// Références aux handlers pour pouvoir les supprimer
+let boundClickHandler = null;
+let boundTouchHandler = null;
+
+/**
+ * Nettoie les écouteurs d'événements de la cible
+ */
+export function cleanupTarget() {
+    if (targetSvg && boundClickHandler) {
+        targetSvg.removeEventListener('click', boundClickHandler);
+        targetSvg.removeEventListener('touchend', boundTouchHandler);
+    }
+    boundClickHandler = null;
+    boundTouchHandler = null;
+    onZoneClickCallback = null;
+}
+
 /**
  * Initialise la cible SVG
  */
 export function initTarget(svgElement, onZoneClick) {
+    // Nettoie les anciens handlers si présents
+    cleanupTarget();
+
     targetSvg = svgElement;
     onZoneClickCallback = onZoneClick;
     drawTarget();
@@ -202,8 +222,12 @@ function updateKillshotVisibility() {
 function setupEventListeners() {
     if (!targetSvg) return;
 
-    targetSvg.addEventListener('click', handleTargetClick);
-    targetSvg.addEventListener('touchend', handleTargetTouch);
+    // Sauvegarde les références pour pouvoir les supprimer plus tard
+    boundClickHandler = handleTargetClick;
+    boundTouchHandler = handleTargetTouch;
+
+    targetSvg.addEventListener('click', boundClickHandler);
+    targetSvg.addEventListener('touchend', boundTouchHandler);
 }
 
 /**
