@@ -13,13 +13,14 @@ const DARTS_CONFIG = {
     // Ordre des segments (sens horaire depuis le haut)
     segments: [20, 1, 18, 4, 13, 6, 10, 15, 2, 17, 3, 19, 7, 16, 8, 11, 14, 9, 12, 5],
     // Rayons des zones (en pixels depuis le centre)
+    // Agrandis pour correspondre à la taille de la cible classique (rayon 220)
     radii: {
-        doubleBull: 8,    // Double bull (50 pts)
-        singleBull: 20,   // Single bull (25 pts)
-        innerTriple: 95,  // Début triple
-        outerTriple: 107, // Fin triple
-        innerDouble: 160, // Début double
-        outerDouble: 170, // Fin double (bord)
+        doubleBull: 10,   // Double bull (50 pts)
+        singleBull: 26,   // Single bull (25 pts)
+        innerTriple: 123, // Début triple
+        outerTriple: 138, // Fin triple
+        innerDouble: 207, // Début double
+        outerDouble: 220, // Fin double (bord)
     }
 };
 
