@@ -50,10 +50,35 @@
                         <span class="mode-name">Classique</span>
                         <span class="mode-desc">5 séries de 3 lancers</span>
                     </button>
+                    <button class="mode-btn" data-mode="luckyLuke">
+                        <span class="mode-icon">🤠</span>
+                        <span class="mode-name">Lucky Luke</span>
+                        <span class="mode-desc">Élimine le joueur précédent</span>
+                    </button>
+                    <button class="mode-btn" data-mode="race">
+                        <span class="mode-icon">🏃</span>
+                        <span class="mode-name">Race</span>
+                        <span class="mode-desc">Premier à 25 points</span>
+                    </button>
+                    <button class="mode-btn" data-mode="suiteOr">
+                        <span class="mode-icon">🥇</span>
+                        <span class="mode-name">Suite d'Or</span>
+                        <span class="mode-desc">Séquence 1-2-3-4-6-4-3-2-1</span>
+                    </button>
+                    <button class="mode-btn" data-mode="mode007">
+                        <span class="mode-icon">🔫</span>
+                        <span class="mode-name">007</span>
+                        <span class="mode-desc">5 bullseyes pour gagner</span>
+                    </button>
+                    <button class="mode-btn" data-mode="killer">
+                        <span class="mode-icon">💀</span>
+                        <span class="mode-name">Killer</span>
+                        <span class="mode-desc">Exactement 20 points</span>
+                    </button>
                     <button class="mode-btn" data-mode="morpion">
                         <span class="mode-icon">⭕</span>
                         <span class="mode-name">Morpion</span>
-                        <span class="mode-desc">2 joueurs - Alignez 3 symboles</span>
+                        <span class="mode-desc">Alignez 3 symboles</span>
                     </button>
                     <button class="mode-btn" data-mode="darts301">
                         <span class="mode-icon">🎯</span>
@@ -63,7 +88,7 @@
                     <button class="mode-btn" data-mode="customTarget">
                         <span class="mode-icon">📱</span>
                         <span class="mode-name">Ta Cible</span>
-                        <span class="mode-desc">Scanne le QR - Upload ta photo</span>
+                        <span class="mode-desc">Upload ta photo</span>
                     </button>
                 </div>
             </div>
@@ -163,6 +188,15 @@
                 <button id="btn-resume" class="btn btn-primary">Reprendre</button>
                 <button id="btn-fullscreen" class="btn btn-secondary">Plein Écran</button>
                 <button id="btn-quit-game" class="btn btn-danger">Quitter la Partie</button>
+            </div>
+        </div>
+
+        <!-- Modal Description du Mode -->
+        <div id="mode-description-modal" class="modal" style="display: none;">
+            <div class="modal-content">
+                <h3 id="mode-desc-title">Mode de Jeu</h3>
+                <p id="mode-desc-text" class="mode-description-text"></p>
+                <button id="btn-close-mode-desc" class="btn btn-primary">Compris !</button>
             </div>
         </div>
 

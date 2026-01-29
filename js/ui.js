@@ -20,8 +20,56 @@ import {
     getSelectedImage, selectImage, nextImage, prevImage, deleteImage, isConnected,
     drawCustomTarget, generateQRCodeHTML, setImageServerUrl, getImageServerUrl
 } from './customTarget.js';
+import {
+    initLuckyLuke, registerLuckyLukeThrow, getLuckyLukeState, getCurrentLuckyLukePlayer, getLuckyLukeResult,
+    initRace, registerRaceThrow, getRaceState, getCurrentRacePlayer, getRaceResult,
+    initSuiteOr, registerSuiteOrThrow, getSuiteOrState, getCurrentSuiteOrPlayer, getSuiteOrResult, getExpectedZone,
+    init007, register007Throw, get007State, getCurrent007Player, get007Result,
+    initKiller, registerKillerThrow, getKillerState, getCurrentKillerPlayer, getKillerResult,
+    quitNewMode, restartNewMode
+} from './newModes.js';
 import { loadCurrentGame, loadSettings, saveSettings, clearAllData, hasCurrentGame, loadLeaderboard, clearLeaderboard } from './storage.js';
 import { sortPlayersByScore, getAverageScore, getHitRate } from './players.js';
+
+// Descriptions des modes de jeu
+const MODE_DESCRIPTIONS = {
+    classic: {
+        title: 'Mode Classique',
+        description: 'Chaque joueur effectue 5 séries de 3 lancers. Le score est calculé selon la zone touchée : Centre (6 pts), Zone 4 (4 pts), Zone 3 (3 pts), Zone 2 (2 pts), Zone 1 (1 pt). Les Killshots valent 8 points et sont disponibles au dernier lancer de chaque série.'
+    },
+    luckyLuke: {
+        title: 'Lucky Luke',
+        description: 'Chaque joueur lance une fois. Si un joueur fait un score STRICTEMENT SUPÉRIEUR au joueur précédent, il l\'élimine ! Le dernier joueur encore en lice remporte la partie. Soyez rapide et précis comme Lucky Luke !'
+    },
+    race: {
+        title: 'Race',
+        description: 'Course aux points ! Le premier joueur à atteindre ou dépasser 25 points remporte la partie. Chaque joueur lance à tour de rôle. Visez les zones à haut score pour gagner rapidement !'
+    },
+    suiteOr: {
+        title: 'Suite d\'Or',
+        description: 'Touchez les zones dans l\'ordre : 1 → 2 → 3 → 4 → 6 → 4 → 3 → 2 → 1. Si vous touchez la bonne zone, vous rejouez immédiatement ! Sinon, c\'est au joueur suivant. Vous reprenez toujours là où vous en étiez dans la séquence.'
+    },
+    mode007: {
+        title: '007',
+        description: 'Soyez précis comme James Bond ! Le premier joueur à toucher le CENTRE (Bullseye) 5 fois remporte la partie. Seuls les tirs au centre comptent. Concentration maximale requise !'
+    },
+    killer: {
+        title: 'Killer',
+        description: 'Atteignez EXACTEMENT 20 points pour gagner. Attention : si vous dépassez 20, vous revenez à 0 ! De plus, si votre score égalise celui d\'un autre joueur, ce joueur est remis à 0. Stratégie et précision sont de mise !'
+    },
+    morpion: {
+        title: 'Morpion',
+        description: 'Jouez au morpion sur la cible ! 2 joueurs (ou 2 équipes de 2) s\'affrontent. Alignez 3 de vos symboles pour gagner la manche. Le premier à 3 victoires remporte la partie.'
+    },
+    darts301: {
+        title: 'Fléchettes 301',
+        description: 'Commencez à 301 points et descendez jusqu\'à exactement 0. Chaque joueur lance 3 fléchettes par tour. En mode équipe, le score est partagé. Attention aux "bust" si vous dépassez !'
+    },
+    customTarget: {
+        title: 'Choisis ta Cible',
+        description: 'Scannez le QR code avec votre téléphone pour envoyer une photo qui s\'affichera sur la cible. Parfait pour personnaliser vos parties avec des photos de vos amis !'
+    }
+};
 
 // Mode de jeu actuel
 let currentMode = null;
@@ -131,6 +179,11 @@ function cacheElements() {
         btnClearImage: document.getElementById('btn-clear-image'),
         btnCloseQrModal: document.getElementById('btn-close-qr-modal'),
 
+        // Modal description des modes
+        modeDescModal: document.getElementById('mode-description-modal'),
+        modeDescTitle: document.getElementById('mode-desc-title'),
+        modeDescText: document.getElementById('mode-desc-text'),
+        btnCloseModeDesc: document.getElementById('btn-close-mode-desc')
     };
 }
 
@@ -205,6 +258,9 @@ function setupEventListeners() {
     elements.btnCloseQrModal?.addEventListener('click', hideQrUploadModal);
     elements.imageUpload?.addEventListener('change', handleImageUpload);
     elements.btnClearImage?.addEventListener('click', handleClearCustomImage);
+
+    // Modal description des modes
+    elements.btnCloseModeDesc?.addEventListener('click', hideModeDescModal);
 
     // Initialise le nombre de joueurs
     updatePlayerInputs();
@@ -296,6 +352,9 @@ function selectGameMode(btn) {
 
     const mode = btn.dataset.mode;
 
+    // Affiche la description du mode
+    showModeDescModal(mode);
+
     // Le mode Morpion : 2 joueurs ou 4 en équipes
     if (mode === 'morpion') {
         elements.playerCount.min = 2;
@@ -322,14 +381,46 @@ function selectGameMode(btn) {
         elements.playerCountDisplay.textContent = '-';
         elements.teamModeSection.style.display = 'none';
         elements.teamModeToggle.checked = false;
-        // Cache les champs de noms pour ce mode
         elements.playerNamesContainer.innerHTML = '<p style="color: #888; text-align: center;">Ce mode affiche simplement une image personnalisée sur la cible</p>';
+    } else if (mode === 'luckyLuke') {
+        // Lucky Luke : minimum 2 joueurs
+        elements.playerCount.min = 2;
+        elements.playerCount.max = 12;
+        if (parseInt(elements.playerCount.value) < 2) elements.playerCount.value = 2;
+        elements.playerCount.disabled = false;
+        elements.playerCountDisplay.textContent = elements.playerCount.value;
+        elements.teamModeSection.style.display = 'none';
+        elements.teamModeToggle.checked = false;
+        updatePlayerInputs();
     } else {
-        // Mode classique
+        // Autres modes (classic, race, suiteOr, mode007, killer)
         elements.playerCount.min = 1;
         elements.playerCount.max = 12;
         elements.playerCount.disabled = false;
-        updateTeamModeVisibility();
+        elements.teamModeSection.style.display = 'none';
+        elements.teamModeToggle.checked = false;
+        updatePlayerInputs();
+    }
+}
+
+/**
+ * Affiche le modal de description du mode
+ */
+function showModeDescModal(mode) {
+    const desc = MODE_DESCRIPTIONS[mode];
+    if (!desc || !elements.modeDescModal) return;
+
+    elements.modeDescTitle.textContent = desc.title;
+    elements.modeDescText.textContent = desc.description;
+    elements.modeDescModal.style.display = 'flex';
+}
+
+/**
+ * Cache le modal de description du mode
+ */
+function hideModeDescModal() {
+    if (elements.modeDescModal) {
+        elements.modeDescModal.style.display = 'none';
     }
 }
 
@@ -470,13 +561,72 @@ function startGame() {
                 // Affiche quand même le modal pour voir l'état
                 showQrUploadModal();
             });
+    } else if (mode === 'luckyLuke') {
+        // Mode Lucky Luke
+        initLuckyLuke(playerNames, onLuckyLukeUpdate);
+        initTarget(elements.targetSvg, onNewModeTargetClick);
+        setKillshotEnabled(false);
+        updateLuckyLukeUI();
+
+        elements.btnUndo.style.display = 'none';
+        elements.btnMiss.style.display = '';
+        elements.btnMiss.textContent = '✗ Raté (0 pt)';
+        elements.btnMiss.onclick = () => handleNewModeThrow(0, 'miss');
+        elements.btnKillshot.style.display = 'none';
+    } else if (mode === 'race') {
+        // Mode Race
+        initRace(playerNames, onRaceUpdate);
+        initTarget(elements.targetSvg, onNewModeTargetClick);
+        setKillshotEnabled(false);
+        updateRaceUI();
+
+        elements.btnUndo.style.display = 'none';
+        elements.btnMiss.style.display = '';
+        elements.btnMiss.textContent = '✗ Raté (0 pt)';
+        elements.btnMiss.onclick = () => handleNewModeThrow(0, 'miss');
+        elements.btnKillshot.style.display = 'none';
+    } else if (mode === 'suiteOr') {
+        // Mode Suite d'Or
+        initSuiteOr(playerNames, onSuiteOrUpdate);
+        initTarget(elements.targetSvg, onNewModeTargetClick);
+        setKillshotEnabled(false);
+        updateSuiteOrUI();
+
+        elements.btnUndo.style.display = 'none';
+        elements.btnMiss.style.display = '';
+        elements.btnMiss.textContent = '✗ Raté';
+        elements.btnMiss.onclick = () => handleNewModeThrow(0, 'miss');
+        elements.btnKillshot.style.display = 'none';
+    } else if (mode === 'mode007') {
+        // Mode 007
+        init007(playerNames, on007Update);
+        initTarget(elements.targetSvg, onNewModeTargetClick);
+        setKillshotEnabled(false);
+        update007UI();
+
+        elements.btnUndo.style.display = 'none';
+        elements.btnMiss.style.display = '';
+        elements.btnMiss.textContent = '✗ Raté';
+        elements.btnMiss.onclick = () => handleNewModeThrow(0, 'miss');
+        elements.btnKillshot.style.display = 'none';
+    } else if (mode === 'killer') {
+        // Mode Killer
+        initKiller(playerNames, onKillerUpdate);
+        initTarget(elements.targetSvg, onNewModeTargetClick);
+        setKillshotEnabled(false);
+        updateKillerUI();
+
+        elements.btnUndo.style.display = 'none';
+        elements.btnMiss.style.display = '';
+        elements.btnMiss.textContent = '✗ Raté (0 pt)';
+        elements.btnMiss.onclick = () => handleNewModeThrow(0, 'miss');
+        elements.btnKillshot.style.display = 'none';
     } else {
         // Mode Classique (avec ou sans équipes)
         const teamMode = elements.teamModeToggle?.checked || false;
         const teams = {};
 
         if (teamMode) {
-            // Récupère les équipes depuis les inputs
             nameInputs.forEach((input, i) => {
                 teams[i] = parseInt(input.dataset.team) || 1;
             });
@@ -485,15 +635,15 @@ function startGame() {
         initGame(mode, playerNames, onGameUpdate, { teamMode, teams });
         initTarget(elements.targetSvg, onTargetClick);
 
-        // Affiche les contrôles classiques
         elements.btnUndo.style.display = '';
         elements.btnMiss.style.display = '';
         elements.btnMiss.textContent = '✗ Raté';
+        elements.btnMiss.onclick = null;
         elements.btnKillshot.style.display = '';
     }
 
     showScreen('game');
-    if (mode !== 'morpion' && mode !== 'darts301') {
+    if (mode !== 'morpion' && mode !== 'darts301' && !['luckyLuke', 'race', 'suiteOr', 'mode007', 'killer'].includes(mode)) {
         updateGameUI();
     }
 }
@@ -1242,13 +1392,23 @@ function toggleFullscreen() {
  * Gère la sortie du jeu
  */
 function handleQuitGame() {
+    const newModes = ['luckyLuke', 'race', 'suiteOr', 'mode007', 'killer'];
+
     if (currentMode === 'customTarget') {
-        // Déconnecte du serveur d'images
         disconnectImageServer();
-        // Restaure les boutons par défaut
         resetGameButtons();
         hidePauseMenu();
         showScreen('home');
+        return;
+    }
+
+    if (newModes.includes(currentMode)) {
+        if (confirm('Voulez-vous vraiment quitter la partie ?')) {
+            quitNewMode();
+            resetGameButtons();
+            hidePauseMenu();
+            showScreen('home');
+        }
         return;
     }
 
@@ -1382,8 +1542,9 @@ function showEndScreen() {
  * Gère la revanche / manche suivante
  */
 function handleRematch() {
+    const newModes = ['luckyLuke', 'race', 'suiteOr', 'mode007', 'killer'];
+
     if (currentMode === 'morpion') {
-        // Manche suivante (garde les scores)
         nextRound();
         drawMorpionGrid(elements.targetSvg, onMorpionCellClick);
         updateMorpionDisplay(elements.targetSvg);
@@ -1392,6 +1553,18 @@ function handleRematch() {
         restartDarts();
         drawDartsTarget(elements.targetSvg, onDartsClick);
         updateDartsUI();
+    } else if (newModes.includes(currentMode)) {
+        restartNewMode();
+        initTarget(elements.targetSvg, onNewModeTargetClick);
+        setKillshotEnabled(false);
+        // Met à jour l'UI selon le mode
+        switch (currentMode) {
+            case 'luckyLuke': updateLuckyLukeUI(); break;
+            case 'race': updateRaceUI(); break;
+            case 'suiteOr': updateSuiteOrUI(); break;
+            case 'mode007': update007UI(); break;
+            case 'killer': updateKillerUI(); break;
+        }
     } else {
         rematch();
         initTarget(elements.targetSvg, onTargetClick);
@@ -1717,4 +1890,319 @@ function handleClearCustomImage() {
 function isUploadMode() {
     // Cette fonction n'est plus utilisée car l'upload se fait via le serveur externe
     return false;
+}
+
+// ========================================
+// NOUVEAUX MODES DE JEU
+// ========================================
+
+/**
+ * Gère le clic sur la cible pour les nouveaux modes
+ */
+function onNewModeTargetClick(hitData) {
+    handleNewModeThrow(hitData.points, hitData.zone);
+
+    // Affiche le marqueur d'impact
+    addImpactMarker(
+        elements.targetSvg.parentElement,
+        hitData.relativeX,
+        hitData.relativeY,
+        hitData.zone
+    );
+
+    // Feedback haptique
+    if (settings.vibrationEnabled && navigator.vibrate) {
+        navigator.vibrate(hitData.points > 0 ? 50 : 100);
+    }
+
+    // Affiche les points
+    showPointsPopup(hitData.points, hitData.zone, hitData.screenX, hitData.screenY);
+
+    // Son
+    playSound(hitData.zone);
+}
+
+/**
+ * Traite un lancer pour les nouveaux modes
+ */
+function handleNewModeThrow(points, zone) {
+    let result;
+
+    switch (currentMode) {
+        case 'luckyLuke':
+            result = registerLuckyLukeThrow(points);
+            break;
+        case 'race':
+            result = registerRaceThrow(points);
+            break;
+        case 'suiteOr':
+            result = registerSuiteOrThrow(zone, points);
+            break;
+        case 'mode007':
+            result = register007Throw(zone);
+            break;
+        case 'killer':
+            result = registerKillerThrow(points);
+            break;
+    }
+
+    return result;
+}
+
+// --- LUCKY LUKE ---
+
+function onLuckyLukeUpdate(state) {
+    updateLuckyLukeUI();
+    if (state.status === 'finished') {
+        setTimeout(() => showNewModeEndScreen('luckyLuke'), 1500);
+    }
+}
+
+function updateLuckyLukeUI() {
+    const state = getLuckyLukeState();
+    if (!state) return;
+
+    const player = getCurrentLuckyLukePlayer();
+    const activePlayers = state.players.filter(p => !p.eliminated);
+
+    elements.currentPlayerName.textContent = player.name;
+    elements.currentScore.textContent = state.previousScore !== null ? `Précédent: ${state.previousScore}` : '-';
+    elements.throwNumber.textContent = `${activePlayers.length} joueurs restants`;
+    elements.seriesNumber.textContent = 'Lucky Luke';
+
+    // Tableau des scores
+    elements.scoreboardList.innerHTML = state.players.map(p => `
+        <div class="scoreboard-item ${p.id === player.id ? 'active' : ''} ${p.eliminated ? 'eliminated' : ''}">
+            <span class="name" style="${p.eliminated ? 'text-decoration: line-through; color: #666;' : ''}">${p.name}</span>
+            <span class="score">${p.eliminated ? '❌' : (p.lastScore !== null ? p.lastScore : '-')}</span>
+        </div>
+    `).join('');
+
+    setTimeout(() => clearImpactMarkers(), 2000);
+}
+
+// --- RACE ---
+
+function onRaceUpdate(state) {
+    updateRaceUI();
+    if (state.status === 'finished') {
+        setTimeout(() => showNewModeEndScreen('race'), 1500);
+    }
+}
+
+function updateRaceUI() {
+    const state = getRaceState();
+    if (!state) return;
+
+    const player = getCurrentRacePlayer();
+
+    elements.currentPlayerName.textContent = player.name;
+    elements.currentScore.textContent = player.score;
+    elements.throwNumber.textContent = `Objectif: ${state.targetScore} pts`;
+    elements.seriesNumber.textContent = 'Race';
+
+    // Tableau des scores trié par score
+    const sortedPlayers = [...state.players].sort((a, b) => b.score - a.score);
+    elements.scoreboardList.innerHTML = sortedPlayers.map(p => `
+        <div class="scoreboard-item ${p.id === player.id ? 'active' : ''}">
+            <span class="name">${p.name}</span>
+            <span class="score">${p.score}/${state.targetScore}</span>
+        </div>
+    `).join('');
+
+    setTimeout(() => clearImpactMarkers(), 2000);
+}
+
+// --- SUITE D'OR ---
+
+function onSuiteOrUpdate(state) {
+    updateSuiteOrUI();
+    if (state.status === 'finished') {
+        setTimeout(() => showNewModeEndScreen('suiteOr'), 1500);
+    }
+}
+
+function updateSuiteOrUI() {
+    const state = getSuiteOrState();
+    if (!state) return;
+
+    const player = getCurrentSuiteOrPlayer();
+    const expectedZone = getExpectedZone();
+    const sequence = state.sequence;
+
+    elements.currentPlayerName.textContent = player.name;
+    elements.currentScore.textContent = `Zone ${expectedZone}`;
+    elements.throwNumber.textContent = `${player.sequenceIndex}/${sequence.length}`;
+    elements.seriesNumber.textContent = 'Suite d\'Or';
+
+    // Affiche la séquence avec progression
+    const sequenceHtml = sequence.map((z, i) => {
+        let style = 'display: inline-block; width: 25px; height: 25px; line-height: 25px; text-align: center; margin: 2px; border-radius: 50%;';
+        if (i < player.sequenceIndex) {
+            style += 'background: #28a745; color: white;'; // Complété
+        } else if (i === player.sequenceIndex) {
+            style += 'background: #ff6b35; color: white; font-weight: bold;'; // Actuel
+        } else {
+            style += 'background: #444; color: #888;'; // À venir
+        }
+        return `<span style="${style}">${z}</span>`;
+    }).join('');
+
+    // Tableau des joueurs
+    elements.scoreboardList.innerHTML = `
+        <div style="padding: 10px; text-align: center; margin-bottom: 10px;">
+            ${sequenceHtml}
+        </div>
+        ${state.players.map(p => `
+            <div class="scoreboard-item ${p.id === player.id ? 'active' : ''}">
+                <span class="name">${p.name}</span>
+                <span class="score">${p.sequenceIndex}/${sequence.length}</span>
+            </div>
+        `).join('')}
+    `;
+
+    setTimeout(() => clearImpactMarkers(), 2000);
+}
+
+// --- 007 ---
+
+function on007Update(state) {
+    update007UI();
+    if (state.status === 'finished') {
+        setTimeout(() => showNewModeEndScreen('mode007'), 1500);
+    }
+}
+
+function update007UI() {
+    const state = get007State();
+    if (!state) return;
+
+    const player = getCurrent007Player();
+
+    elements.currentPlayerName.textContent = player.name;
+    elements.currentScore.textContent = `${player.bullseyeHits}/${state.targetHits}`;
+    elements.throwNumber.textContent = 'Visez le centre !';
+    elements.seriesNumber.textContent = '007';
+
+    // Tableau des scores
+    const sortedPlayers = [...state.players].sort((a, b) => b.bullseyeHits - a.bullseyeHits);
+    elements.scoreboardList.innerHTML = sortedPlayers.map(p => `
+        <div class="scoreboard-item ${p.id === player.id ? 'active' : ''}">
+            <span class="name">${p.name}</span>
+            <span class="score">${'🎯'.repeat(p.bullseyeHits)}${'○'.repeat(state.targetHits - p.bullseyeHits)}</span>
+        </div>
+    `).join('');
+
+    setTimeout(() => clearImpactMarkers(), 2000);
+}
+
+// --- KILLER ---
+
+function onKillerUpdate(state) {
+    updateKillerUI();
+    if (state.status === 'finished') {
+        setTimeout(() => showNewModeEndScreen('killer'), 1500);
+    }
+}
+
+function updateKillerUI() {
+    const state = getKillerState();
+    if (!state) return;
+
+    const player = getCurrentKillerPlayer();
+
+    elements.currentPlayerName.textContent = player.name;
+    elements.currentScore.textContent = player.score;
+    elements.throwNumber.textContent = `Objectif: exactement ${state.targetScore}`;
+    elements.seriesNumber.textContent = 'Killer';
+
+    // Tableau des scores trié
+    const sortedPlayers = [...state.players].sort((a, b) => b.score - a.score);
+    elements.scoreboardList.innerHTML = sortedPlayers.map(p => `
+        <div class="scoreboard-item ${p.id === player.id ? 'active' : ''}">
+            <span class="name">${p.name}</span>
+            <span class="score" style="${p.score === state.targetScore ? 'color: #28a745;' : ''}">${p.score}/${state.targetScore}</span>
+        </div>
+    `).join('');
+
+    setTimeout(() => clearImpactMarkers(), 2000);
+}
+
+// --- ÉCRAN DE FIN NOUVEAUX MODES ---
+
+function showNewModeEndScreen(mode) {
+    let result, title, winnerText;
+
+    switch (mode) {
+        case 'luckyLuke':
+            result = getLuckyLukeResult();
+            title = '🤠 Lucky Luke !';
+            winnerText = result.winner?.name || 'Personne';
+            break;
+        case 'race':
+            result = getRaceResult();
+            title = '🏃 Race terminée !';
+            winnerText = result.winner?.name || 'Personne';
+            break;
+        case 'suiteOr':
+            result = getSuiteOrResult();
+            title = '🥇 Suite d\'Or !';
+            winnerText = result.winner?.name || 'Personne';
+            break;
+        case 'mode007':
+            result = get007Result();
+            title = '🔫 Mission accomplie !';
+            winnerText = result.winner?.name || 'Personne';
+            break;
+        case 'killer':
+            result = getKillerResult();
+            title = '💀 Killer !';
+            winnerText = result.winner?.name || 'Personne';
+            break;
+        default:
+            return;
+    }
+
+    elements.winnerTitle.textContent = title;
+    elements.winnerName.textContent = winnerText;
+
+    // Classement
+    elements.rankingsList.innerHTML = result.players.map((p, i) => {
+        let scoreText = '';
+        switch (mode) {
+            case 'luckyLuke':
+                scoreText = p.eliminated ? '❌ Éliminé' : '🏆 Vainqueur';
+                break;
+            case 'race':
+            case 'killer':
+                scoreText = `${p.score} pts`;
+                break;
+            case 'suiteOr':
+                scoreText = `${p.sequenceIndex}/9`;
+                break;
+            case 'mode007':
+                scoreText = `${p.bullseyeHits} bullseyes`;
+                break;
+        }
+        return `
+            <div class="ranking-item ${i === 0 ? 'first' : ''}">
+                <span class="ranking-position">${i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : i + 1}</span>
+                <span class="ranking-name">${p.name}</span>
+                <span class="ranking-score">${scoreText}</span>
+            </div>
+        `;
+    }).join('');
+
+    // Stats simples
+    elements.statsContainer.innerHTML = `
+        <div class="stat-item">
+            <div class="stat-value">${result.players.length}</div>
+            <div class="stat-label">Joueurs</div>
+        </div>
+    `;
+
+    elements.btnRematch.textContent = 'Revanche';
+    elements.btnNewGameEnd.textContent = 'Nouvelle Partie';
+
+    showScreen('end');
 }
