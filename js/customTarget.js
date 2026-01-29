@@ -107,7 +107,10 @@ function connectToServer(resolve, reject) {
         });
 
         socket.on('image-deleted', (data) => {
+            console.log('image-deleted reçu:', data);
+            const before = receivedImages.length;
             receivedImages = receivedImages.filter(img => img.timestamp !== data.timestamp);
+            console.log('Images avant:', before, 'après:', receivedImages.length);
             if (onImageUpdateCallback) {
                 onImageUpdateCallback(receivedImages);
             }
@@ -201,8 +204,15 @@ export function prevImage() {
  * Supprime une image
  */
 export function deleteImage(timestamp) {
+    console.log('deleteImage appelé avec timestamp:', timestamp);
+    console.log('socket:', socket ? 'connecté' : 'non connecté');
+    console.log('currentSessionId:', currentSessionId);
+
     if (socket && currentSessionId) {
+        console.log('Envoi delete-image au serveur...');
         socket.emit('delete-image', { sessionId: currentSessionId, timestamp });
+    } else {
+        console.error('Impossible de supprimer: socket ou session manquant');
     }
 }
 
