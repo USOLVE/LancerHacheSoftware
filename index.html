@@ -312,9 +312,30 @@
         <div class="modal-content">
             <h3 id="mode-desc-title">Mode de Jeu</h3>
             <p id="mode-desc-text" class="mode-description-text"></p>
-            <button id="btn-close-mode-desc" class="btn btn-primary" onclick="document.getElementById('mode-description-modal').style.display='none'">Compris !</button>
+            <button id="btn-close-mode-desc" class="btn btn-primary" onclick="closeModeModal()">Compris !</button>
         </div>
     </div>
+
+    <!-- Script global pour fermer la modal -->
+    <script>
+        function closeModeModal() {
+            var modal = document.getElementById('mode-description-modal');
+            if (modal) {
+                modal.style.display = 'none';
+            }
+        }
+        // Ferme aussi en cliquant sur le fond
+        document.addEventListener('DOMContentLoaded', function() {
+            var modal = document.getElementById('mode-description-modal');
+            if (modal) {
+                modal.addEventListener('click', function(e) {
+                    if (e.target === modal) {
+                        closeModeModal();
+                    }
+                });
+            }
+        });
+    </script>
 
     <!-- Scripts -->
     <script type="module" src="js/app.js"></script>

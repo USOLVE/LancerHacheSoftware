@@ -286,6 +286,20 @@ body {
     padding: 15px 0;
 }
 
+/* Modal description spécifique - z-index élevé pour être toujours visible */
+#mode-description-modal {
+    z-index: 9999 !important;
+}
+
+#mode-description-modal .modal-content {
+    pointer-events: auto;
+}
+
+#mode-description-modal .btn {
+    pointer-events: auto;
+    cursor: pointer;
+}
+
 /* Slider nombre de joueurs */
 .slider {
     width: 100%;
