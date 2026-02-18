@@ -15,7 +15,8 @@ const DEFAULT_SETTINGS = {
     soundsEnabled: true,
     vibrationEnabled: true,
     animationsEnabled: true,
-    killshotThrow: 3 // Dernier lancer uniquement
+    killshotThrow: 3, // Dernier lancer uniquement
+    rotation: 0
 };
 
 /**

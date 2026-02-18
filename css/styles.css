@@ -48,6 +48,34 @@ body {
     touch-action: manipulation;
 }
 
+body.rotate-90 {
+    transform: rotate(90deg);
+    transform-origin: center center;
+    width: 100vh;
+    height: 100vw;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    margin-top: calc(-50vw);
+    margin-left: calc(-50vh);
+}
+
+body.rotate-180 {
+    transform: rotate(180deg);
+}
+
+body.rotate-270 {
+    transform: rotate(270deg);
+    transform-origin: center center;
+    width: 100vh;
+    height: 100vw;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    margin-top: calc(-50vw);
+    margin-left: calc(-50vh);
+}
+
 /* Écrans */
 .screen {
     display: none;

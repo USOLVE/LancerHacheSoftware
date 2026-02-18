@@ -150,6 +150,7 @@ function cacheElements() {
         settingVibration: document.getElementById('setting-vibration'),
         settingAnimations: document.getElementById('setting-animations'),
         settingKillshotThrow: document.getElementById('setting-killshot-throw'),
+        settingRotation: document.getElementById('setting-rotation'),
         settingImageServer: document.getElementById('setting-image-server'),
         btnBackSettings: document.getElementById('btn-back-settings'),
         btnClearData: document.getElementById('btn-clear-data'),
@@ -203,6 +204,8 @@ function applySettings() {
     if (elements.settingVibration) elements.settingVibration.checked = settings.vibrationEnabled;
     if (elements.settingAnimations) elements.settingAnimations.checked = settings.animationsEnabled;
     if (elements.settingKillshotThrow) elements.settingKillshotThrow.value = settings.killshotThrow;
+    if (elements.settingRotation) elements.settingRotation.value = settings.rotation || 0;
+    applyRotation(settings.rotation || 0);
     if (elements.settingImageServer) {
         elements.settingImageServer.value = getImageServerUrl();
     }
@@ -246,6 +249,7 @@ function setupEventListeners() {
     elements.settingVibration?.addEventListener('change', saveUserSettings);
     elements.settingAnimations?.addEventListener('change', saveUserSettings);
     elements.settingKillshotThrow?.addEventListener('change', saveUserSettings);
+    elements.settingRotation?.addEventListener('change', saveUserSettings);
     elements.settingImageServer?.addEventListener('change', handleImageServerChange);
     elements.btnBackSettings?.addEventListener('click', () => showScreen('home'));
     elements.btnClearData?.addEventListener('click', handleClearData);
@@ -1606,13 +1610,26 @@ function handleNewGameFromEnd() {
  * Sauvegarde les paramètres utilisateur
  */
 function saveUserSettings() {
+    const rotation = parseInt(elements.settingRotation?.value || 0);
     settings = {
         soundsEnabled: elements.settingSounds.checked,
         vibrationEnabled: elements.settingVibration.checked,
         animationsEnabled: elements.settingAnimations.checked,
-        killshotThrow: parseInt(elements.settingKillshotThrow.value)
+        killshotThrow: parseInt(elements.settingKillshotThrow.value),
+        rotation: rotation
     };
     saveSettings(settings);
+    applyRotation(rotation);
+}
+
+/**
+ * Applique la rotation sur le body
+ */
+function applyRotation(deg) {
+    document.body.classList.remove('rotate-90', 'rotate-180', 'rotate-270');
+    if (deg && deg !== 0) {
+        document.body.classList.add(`rotate-${deg}`);
+    }
 }
 
 /**
