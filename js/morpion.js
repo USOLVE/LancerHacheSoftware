@@ -248,6 +248,16 @@ export function restartMorpion() {
 }
 
 /**
+ * Enregistre un raté : passe le tour sans placer de symbole
+ */
+export function missMorpion() {
+    if (!morpionState || morpionState.status !== 'playing') return null;
+    nextPlayer();
+    notifyUpdate();
+    return { action: 'miss' };
+}
+
+/**
  * Quitte le morpion
  */
 export function quitMorpion() {

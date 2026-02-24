@@ -8,7 +8,7 @@ import {
     registerThrow, registerMiss, undoLast, getGameResult, rematch, quitGame, getTeamInfo
 } from './game.js';
 import {
-    initMorpion, getMorpionState, getCurrentMorpionPlayer, playCell,
+    initMorpion, getMorpionState, getCurrentMorpionPlayer, playCell, missMorpion,
     getMorpionResult, restartMorpion, nextRound, quitMorpion, drawMorpionGrid, updateMorpionDisplay
 } from './morpion.js';
 import {
@@ -479,9 +479,16 @@ function startGame() {
         drawMorpionGrid(elements.targetSvg, onMorpionCellClick);
         updateMorpionUI();
 
-        // Cache les contrôles classiques
+        // Cache les contrôles classiques, affiche seulement Raté
         elements.btnUndo.style.display = 'none';
-        elements.btnMiss.style.display = 'none';
+        elements.btnMiss.style.display = '';
+        elements.btnMiss.textContent = '✗ Raté';
+        elements.btnMiss.onclick = () => {
+            const result = missMorpion();
+            if (result && settings.soundsEnabled) {
+                playMorpionSound('miss');
+            }
+        };
         elements.btnKillshot.style.display = 'none';
     } else if (mode === 'darts301') {
         // Mode Fléchettes 301 (avec ou sans équipes)
@@ -833,7 +840,8 @@ function playMorpionSound(action) {
         const frequencies = {
             'place': 660,
             'erase': 330,
-            'wasted': 220
+            'wasted': 220,
+            'miss': 180
         };
 
         oscillator.frequency.value = frequencies[action] || 440;
