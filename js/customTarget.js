@@ -336,15 +336,6 @@ export function drawCustomTarget(svgElement, onZoneClick) {
         svgElement.appendChild(circle);
     });
 
-    // Centre (bullseye)
-    const bullseye = createSvgElement('circle', {
-        cx: center, cy: center, r: 25,
-        fill: 'rgba(255, 0, 0, 0.6)',
-        stroke: '#fff',
-        'stroke-width': 2
-    });
-    svgElement.appendChild(bullseye);
-
     // Zone cliquable
     if (onZoneClick) {
         const clickZone = createSvgElement('circle', {
