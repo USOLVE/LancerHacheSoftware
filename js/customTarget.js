@@ -324,7 +324,7 @@ export function drawCustomTarget(svgElement, onZoneClick) {
     }
 
     // Cercles de zone (lignes uniquement)
-    const zones = [220, 165, 110, 55, 25];
+    const zones = [220, 165, 110, 55];
     zones.forEach(radius => {
         const circle = createSvgElement('circle', {
             cx: center, cy: center, r: radius,
