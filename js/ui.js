@@ -514,6 +514,7 @@ function startGame() {
     } else if (mode === 'customTarget') {
         // Mode Custom Target : connexion au serveur d'images
         cleanupTarget(); // Nettoie les handlers de la cible classique
+        clearImpactMarkers(); // Cache tout marqueur rouge résiduel
 
         // Bouton QR Code (utilise btnUndo)
         elements.btnUndo.style.display = '';

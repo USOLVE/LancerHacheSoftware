@@ -301,11 +301,11 @@ export function drawCustomTarget(svgElement, onZoneClick) {
     });
     svgElement.appendChild(background);
 
-    // Cercle de la cible
+    // Cercle de la cible (contour uniquement, fond transparent)
     const targetCircle = createSvgElement('circle', {
         cx: center, cy: center, r: 220,
-        fill: '#f5f5dc',
-        stroke: '#333',
+        fill: 'none',
+        stroke: '#555',
         'stroke-width': 3
     });
     svgElement.appendChild(targetCircle);
@@ -329,7 +329,7 @@ export function drawCustomTarget(svgElement, onZoneClick) {
         const circle = createSvgElement('circle', {
             cx: center, cy: center, r: radius,
             fill: 'none',
-            stroke: 'rgba(0, 0, 0, 0.3)',
+            stroke: 'rgba(255, 255, 255, 0.4)',
             'stroke-width': 2,
             'stroke-dasharray': '5,5'
         });
