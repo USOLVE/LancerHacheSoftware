@@ -134,6 +134,10 @@ function cacheElements() {
         btnResume: document.getElementById('btn-resume'),
         btnFullscreen: document.getElementById('btn-fullscreen'),
         btnQuitGame: document.getElementById('btn-quit-game'),
+        confirmQuitModal: document.getElementById('confirm-quit-modal'),
+        confirmQuitMessage: document.getElementById('confirm-quit-message'),
+        btnConfirmQuitYes: document.getElementById('btn-confirm-quit-yes'),
+        btnConfirmQuitNo: document.getElementById('btn-confirm-quit-no'),
         pointsPopup: document.getElementById('points-popup'),
 
         // Fin de partie
@@ -1403,10 +1407,8 @@ function toggleFullscreen() {
         document.documentElement.requestFullscreen().catch(err => {
             console.log('Erreur plein écran:', err);
         });
-        localStorage.setItem('fullscreenPref', 'true');
     } else {
         document.exitFullscreen();
-        localStorage.setItem('fullscreenPref', 'false');
     }
 }
 
@@ -1421,25 +1423,17 @@ function handleQuitGame() {
         resetGameButtons();
         hidePauseMenu();
         showScreen('home');
-        restoreFullscreenIfNeeded();
         return;
     }
 
-    const wasFullscreen = !!document.fullscreenElement;
+    const message = newModes.includes(currentMode)
+        ? 'Voulez-vous vraiment quitter la partie ?'
+        : 'Voulez-vous vraiment quitter la partie ? La progression sera perdue.';
 
-    if (newModes.includes(currentMode)) {
-        if (confirm('Voulez-vous vraiment quitter la partie ?')) {
+    showConfirmQuit(message, () => {
+        if (newModes.includes(currentMode)) {
             quitNewMode();
-            resetGameButtons();
-            hidePauseMenu();
-            showScreen('home');
-            if (wasFullscreen) document.documentElement.requestFullscreen().catch(() => {});
-        }
-        return;
-    }
-
-    if (confirm('Voulez-vous vraiment quitter la partie ? La progression sera perdue.')) {
-        if (currentMode === 'morpion') {
+        } else if (currentMode === 'morpion') {
             quitMorpion();
         } else if (currentMode === 'darts301') {
             quitDarts();
@@ -1450,17 +1444,30 @@ function handleQuitGame() {
         hidePauseMenu();
         showScreen('home');
         checkForSavedGame();
-        if (wasFullscreen) document.documentElement.requestFullscreen().catch(() => {});
-    }
+    });
 }
 
 /**
- * Restaure le plein écran si la préférence est sauvegardée
+ * Affiche la modale de confirmation quitter
  */
-function restoreFullscreenIfNeeded() {
-    if (localStorage.getItem('fullscreenPref') === 'true' && !document.fullscreenElement) {
-        document.documentElement.requestFullscreen().catch(() => {});
+function showConfirmQuit(message, onConfirm) {
+    elements.confirmQuitMessage.textContent = message;
+    elements.confirmQuitModal.style.display = 'flex';
+
+    function onYes() {
+        elements.confirmQuitModal.style.display = 'none';
+        elements.btnConfirmQuitYes.removeEventListener('click', onYes);
+        elements.btnConfirmQuitNo.removeEventListener('click', onNo);
+        onConfirm();
     }
+    function onNo() {
+        elements.confirmQuitModal.style.display = 'none';
+        elements.btnConfirmQuitYes.removeEventListener('click', onYes);
+        elements.btnConfirmQuitNo.removeEventListener('click', onNo);
+    }
+
+    elements.btnConfirmQuitYes.addEventListener('click', onYes);
+    elements.btnConfirmQuitNo.addEventListener('click', onNo);
 }
 
 /**
