@@ -212,7 +212,35 @@
                 <h3>Pause</h3>
                 <button id="btn-resume" class="btn btn-primary">Reprendre</button>
                 <button id="btn-fullscreen" class="btn btn-secondary">Plein Écran</button>
+                <button id="btn-stop-session" class="btn btn-secondary" style="display:none;">Arrêter la session</button>
                 <button id="btn-quit-game" class="btn btn-danger">Quitter la Partie</button>
+            </div>
+        </div>
+
+        <!-- Modale code secret session -->
+        <div id="pin-modal" class="modal" style="display: none;">
+            <div class="modal-content">
+                <h3>Code secret</h3>
+                <div id="pin-dots" class="pin-dots">
+                    <span class="pin-dot"></span>
+                    <span class="pin-dot"></span>
+                    <span class="pin-dot"></span>
+                    <span class="pin-dot"></span>
+                </div>
+                <div class="pin-keypad">
+                    <button class="pin-key" data-digit="1">1</button>
+                    <button class="pin-key" data-digit="2">2</button>
+                    <button class="pin-key" data-digit="3">3</button>
+                    <button class="pin-key" data-digit="4">4</button>
+                    <button class="pin-key" data-digit="5">5</button>
+                    <button class="pin-key" data-digit="6">6</button>
+                    <button class="pin-key" data-digit="7">7</button>
+                    <button class="pin-key" data-digit="8">8</button>
+                    <button class="pin-key" data-digit="9">9</button>
+                    <button class="pin-key pin-clear" id="pin-clear">⌫</button>
+                    <button class="pin-key" data-digit="0">0</button>
+                    <button class="pin-key pin-cancel" id="pin-cancel">✕</button>
+                </div>
             </div>
         </div>
 

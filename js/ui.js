@@ -151,6 +151,12 @@ function cacheElements() {
         confirmQuitMessage: document.getElementById('confirm-quit-message'),
         btnConfirmQuitYes: document.getElementById('btn-confirm-quit-yes'),
         btnConfirmQuitNo: document.getElementById('btn-confirm-quit-no'),
+        btnStopSession: document.getElementById('btn-stop-session'),
+        pinModal: document.getElementById('pin-modal'),
+        pinDots: document.querySelectorAll('.pin-dot'),
+        pinKeys: document.querySelectorAll('.pin-key[data-digit]'),
+        pinClear: document.getElementById('pin-clear'),
+        pinCancel: document.getElementById('pin-cancel'),
         pointsPopup: document.getElementById('points-popup'),
 
         // Fin de partie
@@ -318,6 +324,10 @@ function setupEventListeners() {
     elements.btnResume?.addEventListener('click', hidePauseMenu);
     elements.btnFullscreen?.addEventListener('click', toggleFullscreen);
     elements.btnQuitGame?.addEventListener('click', handleQuitGame);
+    elements.btnStopSession?.addEventListener('click', () => { hidePauseMenu(); showPinModal(); });
+    elements.pinKeys?.forEach(btn => btn.addEventListener('click', () => handlePinDigit(btn.dataset.digit)));
+    elements.pinClear?.addEventListener('click', handlePinClear);
+    elements.pinCancel?.addEventListener('click', hidePinModal);
 
     // Fin de partie
     elements.btnRematch?.addEventListener('click', handleRematch);
@@ -1482,6 +1492,9 @@ function handleKillshot() {
  * Affiche le menu pause
  */
 function showPauseMenu() {
+    if (elements.btnStopSession) {
+        elements.btnStopSession.style.display = isSessionActive() ? '' : 'none';
+    }
     elements.pauseMenu.style.display = 'flex';
 }
 
@@ -1510,7 +1523,7 @@ function renderSessionProfiles() {
         return;
     }
     elements.sessionProfilesGrid.innerHTML = profiles.map(p => `
-        <div class="profile-card" data-profile-id="${p.id}">
+        <div class="profile-card selected" data-profile-id="${p.id}">
             <div class="card-photo">
                 ${p.photo ? `<img src="${p.photo}" alt="">` : '👤'}
             </div>
@@ -1667,6 +1680,58 @@ function handleSaveProfile() {
 /**
  * Échappe le HTML pour sécuriser l'affichage des noms
  */
+// ── PIN modal ──────────────────────────────────────────
+const SESSION_PIN = '4242';
+let pinEntry = '';
+
+function showPinModal() {
+    pinEntry = '';
+    updatePinDots();
+    if (elements.pinModal) elements.pinModal.style.display = 'flex';
+}
+
+function hidePinModal() {
+    if (elements.pinModal) elements.pinModal.style.display = 'none';
+    pinEntry = '';
+    updatePinDots();
+}
+
+function handlePinDigit(digit) {
+    if (pinEntry.length >= 4) return;
+    pinEntry += digit;
+    updatePinDots();
+    if (pinEntry.length === 4) {
+        if (pinEntry === SESSION_PIN) {
+            hidePinModal();
+            endSession();
+            if (sessionTimerInterval) { clearInterval(sessionTimerInterval); sessionTimerInterval = null; }
+            if (elements.sessionTimer) elements.sessionTimer.style.display = 'none';
+            showScreen('home');
+        } else {
+            // Code incorrect : flash rouge puis reset
+            elements.pinDots?.forEach(d => d.classList.add('error'));
+            setTimeout(() => {
+                elements.pinDots?.forEach(d => d.classList.remove('error'));
+                pinEntry = '';
+                updatePinDots();
+            }, 600);
+        }
+    }
+}
+
+function handlePinClear() {
+    pinEntry = pinEntry.slice(0, -1);
+    updatePinDots();
+}
+
+function updatePinDots() {
+    elements.pinDots?.forEach((dot, i) => {
+        dot.classList.toggle('filled', i < pinEntry.length);
+        dot.classList.remove('error');
+    });
+}
+// ───────────────────────────────────────────────────────
+
 function escapeHtml(str) {
     return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }

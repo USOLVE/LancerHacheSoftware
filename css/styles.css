@@ -1532,3 +1532,64 @@ body.rotate-270 {
     height: 100%;
     object-fit: cover;
 }
+
+/* PIN modal */
+.pin-dots {
+    display: flex;
+    justify-content: center;
+    gap: 18px;
+    margin: 20px 0;
+}
+
+.pin-dot {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--bg-tertiary);
+    border: 2px solid var(--text-secondary);
+    display: inline-block;
+    transition: background 0.15s;
+}
+
+.pin-dot.filled {
+    background: var(--accent-primary);
+    border-color: var(--accent-primary);
+}
+
+.pin-dot.error {
+    background: var(--accent-danger);
+    border-color: var(--accent-danger);
+}
+
+.pin-keypad {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-top: 10px;
+}
+
+.pin-key {
+    padding: 20px;
+    font-size: 28px;
+    font-weight: bold;
+    background: var(--bg-tertiary);
+    border: none;
+    border-radius: var(--border-radius);
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: var(--transition);
+    text-align: center;
+}
+
+.pin-key:active {
+    background: var(--accent-primary);
+    transform: scale(0.93);
+}
+
+.pin-clear {
+    color: var(--text-secondary);
+}
+
+.pin-cancel {
+    color: var(--accent-danger);
+}
