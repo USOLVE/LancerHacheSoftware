@@ -20,7 +20,27 @@ function init() {
     // Gère le mode plein écran
     handleFullscreenChange();
 
+    // Demande le plein écran à la première interaction utilisateur
+    requestFullscreenOnFirstInteraction();
+
     console.log('🪓 Lancer de Hache - Application initialisée');
+}
+
+/**
+ * Demande le plein écran à la première interaction utilisateur
+ */
+function requestFullscreenOnFirstInteraction() {
+    function onFirstInteraction() {
+        if (!document.fullscreenElement) {
+            document.documentElement.requestFullscreen().catch(err => {
+                console.log('Plein écran auto non autorisé:', err);
+            });
+        }
+        document.removeEventListener('click', onFirstInteraction);
+        document.removeEventListener('touchstart', onFirstInteraction);
+    }
+    document.addEventListener('click', onFirstInteraction, { once: true });
+    document.addEventListener('touchstart', onFirstInteraction, { once: true });
 }
 
 /**

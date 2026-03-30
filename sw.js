@@ -1,5 +1,5 @@
 // Service Worker pour Lancer de Hache PWA
-const CACHE_NAME = 'lancer-hache-v17';
+const CACHE_NAME = 'lancer-hache-v18';
 const urlsToCache = [
     '/',
     '/index.html',
@@ -10,6 +10,8 @@ const urlsToCache = [
     '/js/scoring.js',
     '/js/players.js',
     '/js/ui.js',
+    '/js/profiles.js',
+    '/js/session.js',
     '/js/storage.js',
     '/js/morpion.js',
     '/js/darts.js',

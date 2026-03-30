@@ -1330,3 +1330,205 @@ body.rotate-270 {
     color: var(--text-secondary);
     margin-top: 30px;
 }
+
+/* ========================================
+   SESSION & PROFILS
+   ======================================== */
+
+.session-container {
+    width: 100%;
+    max-width: 900px;
+    padding: 20px 20px 40px;
+    overflow-y: auto;
+    max-height: 100vh;
+}
+
+.session-container h2 {
+    text-align: center;
+    font-size: 36px;
+    color: var(--accent-primary);
+    margin-bottom: 20px;
+}
+
+.duration-btns {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+    margin-top: 8px;
+}
+
+.duration-btn {
+    flex: 1;
+    min-width: 100px;
+    padding: 20px 10px;
+    background: var(--bg-secondary);
+    border: 3px solid transparent;
+    border-radius: var(--border-radius);
+    color: var(--text-secondary);
+    font-size: 22px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: var(--transition);
+    text-align: center;
+}
+
+.duration-btn.selected {
+    border-color: var(--accent-primary);
+    background: var(--bg-tertiary);
+    color: var(--accent-primary);
+}
+
+.toggle-label {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 20px;
+    cursor: pointer;
+}
+
+.toggle-label input[type="checkbox"] {
+    width: 22px;
+    height: 22px;
+    cursor: pointer;
+}
+
+.profiles-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    min-height: 40px;
+}
+
+.profiles-grid .empty-msg {
+    color: var(--text-secondary);
+    font-size: 17px;
+    padding: 10px 0;
+}
+
+.profile-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 14px 10px;
+    background: var(--bg-secondary);
+    border-radius: var(--border-radius);
+    border: 3px solid transparent;
+    cursor: pointer;
+    transition: var(--transition);
+    min-width: 100px;
+    max-width: 120px;
+    position: relative;
+    text-align: center;
+}
+
+.profile-card.selected {
+    border-color: var(--accent-primary);
+    background: var(--bg-tertiary);
+}
+
+.profile-card .card-photo {
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
+    background: var(--bg-tertiary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 34px;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.profile-card .card-photo img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+}
+
+.profile-card .card-name {
+    font-size: 16px;
+    font-weight: bold;
+    word-break: break-word;
+    max-width: 100px;
+    line-height: 1.2;
+}
+
+.profile-card .card-delete {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    background: var(--accent-danger);
+    border: none;
+    border-radius: 50%;
+    width: 26px;
+    height: 26px;
+    color: white;
+    font-size: 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    font-weight: bold;
+    padding: 0;
+}
+
+.session-player-cards {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 10px;
+}
+
+/* Timer overlay */
+.session-timer {
+    position: fixed;
+    top: 12px;
+    right: 16px;
+    background: rgba(0, 0, 0, 0.75);
+    color: var(--accent-primary);
+    font-size: 28px;
+    font-weight: bold;
+    padding: 6px 16px;
+    border-radius: 24px;
+    z-index: 500;
+    letter-spacing: 2px;
+    pointer-events: none;
+    border: 2px solid var(--accent-primary);
+}
+
+.session-timer.urgent {
+    color: var(--accent-danger);
+    border-color: var(--accent-danger);
+}
+
+/* Profile photo picker in modal */
+.profile-photo-picker {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 10px;
+}
+
+.profile-photo-preview {
+    width: 110px;
+    height: 110px;
+    border-radius: 50%;
+    background: var(--bg-tertiary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 46px;
+    overflow: hidden;
+    cursor: pointer;
+    border: 3px solid var(--bg-tertiary);
+}
+
+.profile-photo-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}

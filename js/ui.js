@@ -30,6 +30,8 @@ import {
 } from './newModes.js';
 import { loadCurrentGame, loadSettings, saveSettings, clearAllData, hasCurrentGame, loadLeaderboard, clearLeaderboard } from './storage.js';
 import { sortPlayersByScore, getAverageScore, getHitRate } from './players.js';
+import { loadProfiles, addProfile, deleteProfile, resizePhoto } from './profiles.js';
+import { startSession, loadSession, endSession, isSessionActive, getTimeRemaining, formatTime } from './session.js';
 
 // Descriptions des modes de jeu
 const MODE_DESCRIPTIONS = {
@@ -78,6 +80,8 @@ let currentMode = null;
 let screens = {};
 let elements = {};
 let settings = {};
+let sessionTimerInterval = null;
+let pendingProfilePhoto = null;
 
 /**
  * Initialise l'interface utilisateur
@@ -88,6 +92,13 @@ export function initUI() {
     setupEventListeners();
     checkForSavedGame();
     showScreen('home');
+
+    // Restore session timer if session was active
+    if (isSessionActive()) {
+        initSessionTimer();
+    } else {
+        endSession(); // clean up expired session
+    }
 }
 
 /**
@@ -101,12 +112,14 @@ function cacheElements() {
         game: document.getElementById('screen-game'),
         end: document.getElementById('screen-end'),
         settings: document.getElementById('screen-settings'),
-        leaderboard: document.getElementById('screen-leaderboard')
+        leaderboard: document.getElementById('screen-leaderboard'),
+        session: document.getElementById('screen-session')
     };
 
     // Éléments interactifs
     elements = {
         // Accueil
+        btnNewSession: document.getElementById('btn-new-session'),
         btnNewGame: document.getElementById('btn-new-game'),
         btnResumeGame: document.getElementById('btn-resume-game'),
         btnSettings: document.getElementById('btn-settings'),
@@ -188,7 +201,31 @@ function cacheElements() {
         modeDescModal: document.getElementById('mode-description-modal'),
         modeDescTitle: document.getElementById('mode-desc-title'),
         modeDescText: document.getElementById('mode-desc-text'),
-        btnCloseModeDesc: document.getElementById('btn-close-mode-desc')
+        btnCloseModeDesc: document.getElementById('btn-close-mode-desc'),
+
+        // Session
+        sessionProfilesGrid: document.getElementById('session-profiles-grid'),
+        btnAddProfile: document.getElementById('btn-add-profile'),
+        btnBackSession: document.getElementById('btn-back-session'),
+        btnStartSession: document.getElementById('btn-start-session'),
+        timerVisibleToggle: document.getElementById('timer-visible-toggle'),
+
+        // Setup session player selector
+        sessionPlayerSelector: document.getElementById('session-player-selector'),
+        setupPlayerCards: document.getElementById('setup-player-cards'),
+
+        // Session timer
+        sessionTimer: document.getElementById('session-timer'),
+        sessionTimerText: document.getElementById('session-timer-text'),
+
+        // Profile modal
+        profileModal: document.getElementById('profile-modal'),
+        profilePhotoPreview: document.getElementById('profile-photo-preview'),
+        profilePhotoInput: document.getElementById('profile-photo-input'),
+        btnPickPhoto: document.getElementById('btn-pick-photo'),
+        profileNameInput: document.getElementById('profile-name-input'),
+        btnSaveProfile: document.getElementById('btn-save-profile'),
+        btnCancelProfile: document.getElementById('btn-cancel-profile')
     };
 }
 
@@ -220,10 +257,49 @@ function applySettings() {
  */
 function setupEventListeners() {
     // Accueil
+    elements.btnNewSession?.addEventListener('click', showSessionScreen);
     elements.btnNewGame?.addEventListener('click', () => showScreen('setup'));
     elements.btnResumeGame?.addEventListener('click', resumeGame);
     elements.btnLeaderboard?.addEventListener('click', showLeaderboard);
     elements.btnSettings?.addEventListener('click', () => showScreen('settings'));
+
+    // Session
+    elements.btnBackSession?.addEventListener('click', () => showScreen('home'));
+    elements.btnStartSession?.addEventListener('click', handleStartSession);
+    elements.btnAddProfile?.addEventListener('click', showProfileModal);
+
+    // Duration buttons (event delegation)
+    document.querySelector('.duration-btns')?.addEventListener('click', (e) => {
+        const btn = e.target.closest('.duration-btn');
+        if (!btn) return;
+        document.querySelectorAll('.duration-btn').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+    });
+
+    // Session profiles grid (event delegation)
+    elements.sessionProfilesGrid?.addEventListener('click', (e) => {
+        const deleteBtn = e.target.closest('.card-delete');
+        const card = e.target.closest('.profile-card');
+        if (deleteBtn) {
+            const id = deleteBtn.dataset.profileId;
+            deleteProfile(id);
+            renderSessionProfiles();
+        } else if (card) {
+            card.classList.toggle('selected');
+        }
+    });
+
+    // Setup player cards (event delegation)
+    elements.setupPlayerCards?.addEventListener('click', (e) => {
+        const card = e.target.closest('.profile-card');
+        if (card) card.classList.toggle('selected');
+    });
+
+    // Profile modal
+    elements.btnPickPhoto?.addEventListener('click', () => elements.profilePhotoInput?.click());
+    elements.profilePhotoInput?.addEventListener('change', handleProfilePhotoChange);
+    elements.btnSaveProfile?.addEventListener('click', handleSaveProfile);
+    elements.btnCancelProfile?.addEventListener('click', hideProfileModal);
 
     // Configuration
     elements.playerCount?.addEventListener('input', updatePlayerInputs);
@@ -468,9 +544,18 @@ function startGame() {
     currentMode = mode;
 
     const nameInputs = elements.playerNamesContainer.querySelectorAll('.player-name-input');
-    const playerNames = Array.from(nameInputs).map((input, i) =>
-        input.value.trim() || `Joueur ${i + 1}`
-    );
+    let playerNames;
+    if (isSessionActive() && elements.sessionPlayerSelector.style.display !== 'none') {
+        const selectedCards = elements.setupPlayerCards.querySelectorAll('.profile-card.selected');
+        playerNames = Array.from(selectedCards).map(c => c.querySelector('.card-name').textContent);
+        if (playerNames.length === 0) {
+            playerNames = ['Joueur 1'];
+        }
+    } else {
+        playerNames = Array.from(nameInputs).map((input, i) =>
+            input.value.trim() || `Joueur ${i + 1}`
+        );
+    }
 
     // Cache l'historique des lancers par défaut
     elements.roundThrows.style.display = 'none';
@@ -501,9 +586,13 @@ function startGame() {
         const teams = {};
 
         if (teamMode) {
-            nameInputs.forEach((input, i) => {
-                teams[i] = parseInt(input.dataset.team) || 1;
-            });
+            if (isSessionActive() && elements.sessionPlayerSelector.style.display !== 'none') {
+                playerNames.forEach((_, i) => { teams[i] = i % 2 === 0 ? 1 : 2; });
+            } else {
+                nameInputs.forEach((input, i) => {
+                    teams[i] = parseInt(input.dataset.team) || 1;
+                });
+            }
         }
 
         initDarts(playerNames, onDartsUpdate, 301, { teamMode, teams });
@@ -650,9 +739,13 @@ function startGame() {
         const teams = {};
 
         if (teamMode) {
-            nameInputs.forEach((input, i) => {
-                teams[i] = parseInt(input.dataset.team) || 1;
-            });
+            if (isSessionActive() && elements.sessionPlayerSelector.style.display !== 'none') {
+                playerNames.forEach((_, i) => { teams[i] = i % 2 === 0 ? 1 : 2; });
+            } else {
+                nameInputs.forEach((input, i) => {
+                    teams[i] = parseInt(input.dataset.team) || 1;
+                });
+            }
         }
 
         initGame(mode, playerNames, onGameUpdate, { teamMode, teams });
@@ -1400,6 +1493,185 @@ function hidePauseMenu() {
 }
 
 /**
+ * Affiche l'écran de session
+ */
+function showSessionScreen() {
+    renderSessionProfiles();
+    showScreen('session');
+}
+
+/**
+ * Rend les cartes de profils sur l'écran de session
+ */
+function renderSessionProfiles() {
+    const profiles = loadProfiles();
+    if (!profiles.length) {
+        elements.sessionProfilesGrid.innerHTML = '<p class="empty-msg">Aucun joueur. Cliquez sur "+ Ajouter un joueur".</p>';
+        return;
+    }
+    elements.sessionProfilesGrid.innerHTML = profiles.map(p => `
+        <div class="profile-card" data-profile-id="${p.id}">
+            <div class="card-photo">
+                ${p.photo ? `<img src="${p.photo}" alt="">` : '👤'}
+            </div>
+            <div class="card-name">${escapeHtml(p.name)}</div>
+            <button class="card-delete" data-profile-id="${p.id}" aria-label="Supprimer">×</button>
+        </div>
+    `).join('');
+}
+
+/**
+ * Démarre une nouvelle session
+ */
+function handleStartSession() {
+    const selectedCards = elements.sessionProfilesGrid.querySelectorAll('.profile-card.selected');
+    const playerIds = Array.from(selectedCards).map(c => c.dataset.profileId);
+    if (playerIds.length === 0) return; // require at least 1 player
+
+    const durationBtn = document.querySelector('.duration-btn.selected');
+    const durationStr = durationBtn?.dataset.duration;
+    const duration = durationStr ? parseInt(durationStr) : null;
+    const timerVisible = elements.timerVisibleToggle?.checked ?? true;
+
+    startSession({ duration, timerVisible, playerIds });
+    initSessionTimer();
+    updateSetupForSession();
+    showScreen('setup');
+}
+
+/**
+ * Met à jour l'écran de setup selon qu'une session est active ou non
+ */
+function updateSetupForSession() {
+    if (isSessionActive()) {
+        const playerCountSection = elements.playerCount?.closest('.setup-section');
+        if (playerCountSection) playerCountSection.style.display = 'none';
+        const playerNamesSection = elements.playerNamesContainer?.closest('.setup-section');
+        if (playerNamesSection) playerNamesSection.style.display = 'none';
+        if (elements.teamModeSection) elements.teamModeSection.style.display = 'none';
+        if (elements.sessionPlayerSelector) elements.sessionPlayerSelector.style.display = 'block';
+        renderSetupPlayerCards();
+    } else {
+        const playerCountSection = elements.playerCount?.closest('.setup-section');
+        if (playerCountSection) playerCountSection.style.display = 'block';
+        const playerNamesSection = elements.playerNamesContainer?.closest('.setup-section');
+        if (playerNamesSection) playerNamesSection.style.display = 'block';
+        if (elements.sessionPlayerSelector) elements.sessionPlayerSelector.style.display = 'none';
+        updatePlayerInputs();
+    }
+}
+
+/**
+ * Rend les cartes de joueurs dans l'écran de setup (mode session)
+ */
+function renderSetupPlayerCards() {
+    const session = loadSession();
+    if (!session) return;
+    const profiles = loadProfiles();
+    const sessionPlayers = session.playerIds.map(id => profiles.find(p => p.id === id)).filter(Boolean);
+
+    elements.setupPlayerCards.innerHTML = sessionPlayers.map(p => `
+        <div class="profile-card" data-profile-id="${p.id}">
+            <div class="card-photo">
+                ${p.photo ? `<img src="${p.photo}" alt="">` : '👤'}
+            </div>
+            <div class="card-name">${escapeHtml(p.name)}</div>
+        </div>
+    `).join('');
+}
+
+/**
+ * Initialise le chrono de session
+ */
+function initSessionTimer() {
+    const session = loadSession();
+    if (sessionTimerInterval) {
+        clearInterval(sessionTimerInterval);
+        sessionTimerInterval = null;
+    }
+    if (!session || !session.timerVisible) {
+        if (elements.sessionTimer) elements.sessionTimer.style.display = 'none';
+        return;
+    }
+    if (elements.sessionTimer) elements.sessionTimer.style.display = 'block';
+    updateTimerDisplay();
+    if (session.duration) {
+        sessionTimerInterval = setInterval(() => {
+            updateTimerDisplay();
+            if (getTimeRemaining() <= 0) {
+                clearInterval(sessionTimerInterval);
+                sessionTimerInterval = null;
+                endSession();
+                if (elements.sessionTimer) elements.sessionTimer.style.display = 'none';
+            }
+        }, 1000);
+    }
+}
+
+/**
+ * Met à jour l'affichage du chrono
+ */
+function updateTimerDisplay() {
+    const remaining = getTimeRemaining();
+    if (remaining === null) {
+        if (elements.sessionTimerText) elements.sessionTimerText.textContent = 'Session';
+        return;
+    }
+    if (elements.sessionTimerText) elements.sessionTimerText.textContent = formatTime(remaining);
+    if (elements.sessionTimer) {
+        elements.sessionTimer.classList.toggle('urgent', remaining < 5 * 60 * 1000);
+    }
+}
+
+/**
+ * Affiche la modale de création de profil
+ */
+function showProfileModal() {
+    pendingProfilePhoto = null;
+    if (elements.profileNameInput) elements.profileNameInput.value = '';
+    if (elements.profilePhotoPreview) elements.profilePhotoPreview.innerHTML = '📷';
+    if (elements.profileModal) elements.profileModal.style.display = 'flex';
+}
+
+/**
+ * Cache la modale de création de profil
+ */
+function hideProfileModal() {
+    if (elements.profileModal) elements.profileModal.style.display = 'none';
+    pendingProfilePhoto = null;
+}
+
+/**
+ * Gère le changement de photo de profil
+ */
+async function handleProfilePhotoChange(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    pendingProfilePhoto = await resizePhoto(file);
+    if (elements.profilePhotoPreview) {
+        elements.profilePhotoPreview.innerHTML = `<img src="${pendingProfilePhoto}" alt="">`;
+    }
+}
+
+/**
+ * Sauvegarde un nouveau profil
+ */
+function handleSaveProfile() {
+    const name = elements.profileNameInput?.value.trim();
+    if (!name) return;
+    addProfile(name, pendingProfilePhoto);
+    hideProfileModal();
+    renderSessionProfiles();
+}
+
+/**
+ * Échappe le HTML pour sécuriser l'affichage des noms
+ */
+function escapeHtml(str) {
+    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+/**
  * Toggle plein écran
  */
 function toggleFullscreen() {
@@ -1635,6 +1907,7 @@ function handleNewGameFromEnd() {
     } else {
         // Retourne à l'écran de config
         showScreen('setup');
+        updateSetupForSession();
     }
 }
 

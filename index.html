@@ -12,6 +12,11 @@
     <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
+    <!-- Chrono de session -->
+    <div id="session-timer" class="session-timer" style="display: none;">
+        <span id="session-timer-text">0:00</span>
+    </div>
+
     <!-- Écran d'accueil -->
     <div id="screen-home" class="screen active">
         <div class="home-container">
@@ -21,7 +26,10 @@
                 <p class="subtitle">Système de Scoring</p>
             </div>
             <div class="home-buttons">
-                <button id="btn-new-game" class="btn btn-primary btn-large">
+                <button id="btn-new-session" class="btn btn-primary btn-large">
+                    Nouvelle Session
+                </button>
+                <button id="btn-new-game" class="btn btn-secondary btn-large">
                     Nouvelle Partie
                 </button>
                 <button id="btn-resume-game" class="btn btn-secondary btn-large" style="display: none;">
@@ -90,6 +98,13 @@
                         <span class="mode-name">Ta Cible</span>
                         <span class="mode-desc">Upload ta photo</span>
                     </button>
+                </div>
+            </div>
+
+            <div id="session-player-selector" class="setup-section" style="display: none;">
+                <label>Joueurs qui participent</label>
+                <div id="setup-player-cards" class="session-player-cards">
+                    <!-- Generated dynamically -->
                 </div>
             </div>
 
@@ -327,6 +342,40 @@
         </div>
     </div>
 
+    <!-- Écran de session -->
+    <div id="screen-session" class="screen">
+        <div class="session-container">
+            <h2>Nouvelle Session</h2>
+
+            <div class="setup-section">
+                <label>Durée de la session</label>
+                <div class="duration-btns">
+                    <button class="duration-btn selected" data-duration="30">30 min</button>
+                    <button class="duration-btn" data-duration="60">60 min</button>
+                    <button class="duration-btn" data-duration="">Illimitée</button>
+                </div>
+            </div>
+
+            <div class="setup-section">
+                <label class="toggle-label">
+                    <input type="checkbox" id="timer-visible-toggle" checked>
+                    Afficher le chrono en décompte
+                </label>
+            </div>
+
+            <div class="setup-section">
+                <label>Joueurs de la session</label>
+                <div id="session-profiles-grid" class="profiles-grid"></div>
+                <button id="btn-add-profile" class="btn btn-secondary" style="margin-top: 12px;">+ Ajouter un joueur</button>
+            </div>
+
+            <div class="setup-buttons">
+                <button id="btn-back-session" class="btn btn-secondary">Retour</button>
+                <button id="btn-start-session" class="btn btn-primary">Démarrer</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Modal Description du Mode (niveau racine pour être visible sur tous les écrans) -->
     <div id="mode-description-modal" class="modal" style="display: none;">
         <div class="modal-content">
@@ -356,6 +405,21 @@
             }
         });
     </script>
+
+    <!-- Modale création de profil -->
+    <div id="profile-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <h3>Nouveau Joueur</h3>
+            <div class="profile-photo-picker">
+                <div class="profile-photo-preview" id="profile-photo-preview">📷</div>
+                <input type="file" id="profile-photo-input" accept="image/*" capture="environment" style="display:none;">
+                <button class="btn btn-secondary" id="btn-pick-photo" style="font-size:16px; padding: 10px 20px;">Choisir une photo</button>
+            </div>
+            <input type="text" id="profile-name-input" class="setting-input" placeholder="Nom du joueur" style="margin: 15px 0; font-size: 22px; padding: 14px; width: 100%; border-radius: 8px; background: var(--bg-tertiary); color: var(--text-primary); border: none;">
+            <button id="btn-save-profile" class="btn btn-primary">Enregistrer</button>
+            <button id="btn-cancel-profile" class="btn btn-secondary">Annuler</button>
+        </div>
+    </div>
 
     <!-- Scripts -->
     <script type="module" src="js/app.js"></script>
