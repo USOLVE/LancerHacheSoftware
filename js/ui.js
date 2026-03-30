@@ -1403,8 +1403,10 @@ function toggleFullscreen() {
         document.documentElement.requestFullscreen().catch(err => {
             console.log('Erreur plein écran:', err);
         });
+        localStorage.setItem('fullscreenPref', 'true');
     } else {
         document.exitFullscreen();
+        localStorage.setItem('fullscreenPref', 'false');
     }
 }
 
@@ -1419,8 +1421,11 @@ function handleQuitGame() {
         resetGameButtons();
         hidePauseMenu();
         showScreen('home');
+        restoreFullscreenIfNeeded();
         return;
     }
+
+    const wasFullscreen = !!document.fullscreenElement;
 
     if (newModes.includes(currentMode)) {
         if (confirm('Voulez-vous vraiment quitter la partie ?')) {
@@ -1428,6 +1433,7 @@ function handleQuitGame() {
             resetGameButtons();
             hidePauseMenu();
             showScreen('home');
+            if (wasFullscreen) document.documentElement.requestFullscreen().catch(() => {});
         }
         return;
     }
@@ -1444,6 +1450,16 @@ function handleQuitGame() {
         hidePauseMenu();
         showScreen('home');
         checkForSavedGame();
+        if (wasFullscreen) document.documentElement.requestFullscreen().catch(() => {});
+    }
+}
+
+/**
+ * Restaure le plein écran si la préférence est sauvegardée
+ */
+function restoreFullscreenIfNeeded() {
+    if (localStorage.getItem('fullscreenPref') === 'true' && !document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
     }
 }
 
