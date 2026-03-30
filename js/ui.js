@@ -1441,7 +1441,6 @@ function handleQuitGame() {
             quitGame();
         }
         resetGameButtons();
-        hidePauseMenu();
         showScreen('home');
         checkForSavedGame();
     });
@@ -1451,6 +1450,7 @@ function handleQuitGame() {
  * Affiche la modale de confirmation quitter
  */
 function showConfirmQuit(message, onConfirm) {
+    hidePauseMenu();
     elements.confirmQuitMessage.textContent = message;
     elements.confirmQuitModal.style.display = 'flex';
 
