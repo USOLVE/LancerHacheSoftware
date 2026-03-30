@@ -219,8 +219,8 @@
 
         <!-- Modale code secret session -->
         <div id="pin-modal" class="modal" style="display: none;">
-            <div class="modal-content">
-                <h3>Code secret</h3>
+            <div class="pin-panel">
+                <p class="pin-label">Code secret</p>
                 <div id="pin-dots" class="pin-dots">
                     <span class="pin-dot"></span>
                     <span class="pin-dot"></span>
@@ -228,18 +228,18 @@
                     <span class="pin-dot"></span>
                 </div>
                 <div class="pin-keypad">
-                    <button class="pin-key" data-digit="1">1</button>
-                    <button class="pin-key" data-digit="2">2</button>
-                    <button class="pin-key" data-digit="3">3</button>
-                    <button class="pin-key" data-digit="4">4</button>
-                    <button class="pin-key" data-digit="5">5</button>
-                    <button class="pin-key" data-digit="6">6</button>
-                    <button class="pin-key" data-digit="7">7</button>
-                    <button class="pin-key" data-digit="8">8</button>
-                    <button class="pin-key" data-digit="9">9</button>
-                    <button class="pin-key pin-clear" id="pin-clear">⌫</button>
-                    <button class="pin-key" data-digit="0">0</button>
+                    <button class="pin-key" data-digit="1"><span class="pin-digit">1</span></button>
+                    <button class="pin-key" data-digit="2"><span class="pin-digit">2</span><span class="pin-sub">ABC</span></button>
+                    <button class="pin-key" data-digit="3"><span class="pin-digit">3</span><span class="pin-sub">DEF</span></button>
+                    <button class="pin-key" data-digit="4"><span class="pin-digit">4</span><span class="pin-sub">GHI</span></button>
+                    <button class="pin-key" data-digit="5"><span class="pin-digit">5</span><span class="pin-sub">JKL</span></button>
+                    <button class="pin-key" data-digit="6"><span class="pin-digit">6</span><span class="pin-sub">MNO</span></button>
+                    <button class="pin-key" data-digit="7"><span class="pin-digit">7</span><span class="pin-sub">PQRS</span></button>
+                    <button class="pin-key" data-digit="8"><span class="pin-digit">8</span><span class="pin-sub">TUV</span></button>
+                    <button class="pin-key" data-digit="9"><span class="pin-digit">9</span><span class="pin-sub">WXYZ</span></button>
                     <button class="pin-key pin-cancel" id="pin-cancel">✕</button>
+                    <button class="pin-key" data-digit="0"><span class="pin-digit">0</span></button>
+                    <button class="pin-key pin-clear" id="pin-clear">⌫</button>
                 </div>
             </div>
         </div>
@@ -446,6 +446,16 @@
             <input type="text" id="profile-name-input" class="setting-input" placeholder="Nom du joueur" style="margin: 15px 0; font-size: 22px; padding: 14px; width: 100%; border-radius: 8px; background: var(--bg-tertiary); color: var(--text-primary); border: none;">
             <button id="btn-save-profile" class="btn btn-primary">Enregistrer</button>
             <button id="btn-cancel-profile" class="btn btn-secondary">Annuler</button>
+        </div>
+    </div>
+
+    <!-- Modale fin de session -->
+    <div id="session-end-modal" class="modal" style="display: none;">
+        <div class="modal-content session-end-content">
+            <div class="session-end-icon">🪓</div>
+            <h2 class="session-end-title">Session terminée !</h2>
+            <p class="session-end-sub">Merci d'avoir joué.</p>
+            <button id="btn-session-end-ok" class="btn btn-primary" style="margin-top: 20px; font-size: 22px; padding: 16px 40px;">OK</button>
         </div>
     </div>
 

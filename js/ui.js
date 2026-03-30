@@ -30,7 +30,7 @@ import {
 } from './newModes.js';
 import { loadCurrentGame, loadSettings, saveSettings, clearAllData, hasCurrentGame, loadLeaderboard, clearLeaderboard } from './storage.js';
 import { sortPlayersByScore, getAverageScore, getHitRate } from './players.js';
-import { loadProfiles, addProfile, deleteProfile, resizePhoto } from './profiles.js';
+import { loadProfiles, addProfile, deleteProfile, clearAllProfiles, resizePhoto } from './profiles.js';
 import { startSession, loadSession, endSession, isSessionActive, getTimeRemaining, formatTime } from './session.js';
 
 // Descriptions des modes de jeu
@@ -231,7 +231,9 @@ function cacheElements() {
         btnPickPhoto: document.getElementById('btn-pick-photo'),
         profileNameInput: document.getElementById('profile-name-input'),
         btnSaveProfile: document.getElementById('btn-save-profile'),
-        btnCancelProfile: document.getElementById('btn-cancel-profile')
+        btnCancelProfile: document.getElementById('btn-cancel-profile'),
+        sessionEndModal: document.getElementById('session-end-modal'),
+        btnSessionEndOk: document.getElementById('btn-session-end-ok')
     };
 }
 
@@ -306,6 +308,10 @@ function setupEventListeners() {
     elements.profilePhotoInput?.addEventListener('change', handleProfilePhotoChange);
     elements.btnSaveProfile?.addEventListener('click', handleSaveProfile);
     elements.btnCancelProfile?.addEventListener('click', hideProfileModal);
+    elements.btnSessionEndOk?.addEventListener('click', () => {
+        if (elements.sessionEndModal) elements.sessionEndModal.style.display = 'none';
+        showScreen('home');
+    });
 
     // Configuration
     elements.playerCount?.addEventListener('input', updatePlayerInputs);
@@ -494,6 +500,11 @@ function selectGameMode(btn) {
         elements.teamModeSection.style.display = 'none';
         elements.teamModeToggle.checked = false;
         updatePlayerInputs();
+    }
+
+    // Si une session est active, réappliquer l'affichage session par-dessus
+    if (isSessionActive()) {
+        updateSetupForSession();
     }
 }
 
@@ -1584,7 +1595,7 @@ function renderSetupPlayerCards() {
     const sessionPlayers = session.playerIds.map(id => profiles.find(p => p.id === id)).filter(Boolean);
 
     elements.setupPlayerCards.innerHTML = sessionPlayers.map(p => `
-        <div class="profile-card" data-profile-id="${p.id}">
+        <div class="profile-card selected" data-profile-id="${p.id}">
             <div class="card-photo">
                 ${p.photo ? `<img src="${p.photo}" alt="">` : '👤'}
             </div>
@@ -1614,8 +1625,7 @@ function initSessionTimer() {
             if (getTimeRemaining() <= 0) {
                 clearInterval(sessionTimerInterval);
                 sessionTimerInterval = null;
-                endSession();
-                if (elements.sessionTimer) elements.sessionTimer.style.display = 'none';
+                stopSessionAndNotify();
             }
         }, 1000);
     }
@@ -1680,6 +1690,17 @@ function handleSaveProfile() {
 /**
  * Échappe le HTML pour sécuriser l'affichage des noms
  */
+/**
+ * Termine la session, efface les profils et affiche la modale de fin
+ */
+function stopSessionAndNotify() {
+    endSession();
+    clearAllProfiles();
+    if (sessionTimerInterval) { clearInterval(sessionTimerInterval); sessionTimerInterval = null; }
+    if (elements.sessionTimer) elements.sessionTimer.style.display = 'none';
+    if (elements.sessionEndModal) elements.sessionEndModal.style.display = 'flex';
+}
+
 // ── PIN modal ──────────────────────────────────────────
 const SESSION_PIN = '4242';
 let pinEntry = '';
@@ -1703,10 +1724,7 @@ function handlePinDigit(digit) {
     if (pinEntry.length === 4) {
         if (pinEntry === SESSION_PIN) {
             hidePinModal();
-            endSession();
-            if (sessionTimerInterval) { clearInterval(sessionTimerInterval); sessionTimerInterval = null; }
-            if (elements.sessionTimer) elements.sessionTimer.style.display = 'none';
-            showScreen('home');
+            stopSessionAndNotify();
         } else {
             // Code incorrect : flash rouge puis reset
             elements.pinDots?.forEach(d => d.classList.add('error'));

@@ -82,6 +82,10 @@ export function getProfile(id) {
     return loadProfiles().find(p => p.id === id);
 }
 
+export function clearAllProfiles() {
+    saveProfiles([]);
+}
+
 /**
  * Redimensionne une photo pour le profil
  * @param {File} file - Fichier image
